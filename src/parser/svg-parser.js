@@ -92,9 +92,12 @@ class SVGParser {
     pathElements.forEach(path => {
       const d = path.getAttribute('d');
       if (d) {
+        // Clean up path data by normalizing whitespace and newlines
+        const cleanedPathData = d.replace(/\s+/g, ' ').trim();
+        
         paths.push({
           type: 'path',
-          d,
+          d: cleanedPathData,
           fill: this._parseColor(path.getAttribute('fill')),
           stroke: this._parseColor(path.getAttribute('stroke')),
           id: path.getAttribute('id') || `path_${paths.length}`
