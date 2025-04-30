@@ -81,6 +81,8 @@ class PathGenerator {
         return this._processPathData(path.d, svgInput.viewBox);
       case 'rect':
         return this._processPathData(path.d, svgInput.viewBox);
+      case 'line':
+        return this._processPathData(path.d, svgInput.viewBox);
       case 'circle':
         return this._generateCirclePoints(path, svgInput.viewBox);
       case 'ellipse':

@@ -185,7 +185,7 @@ class SVGVisualizer {
     
     // Add each toolpath
     toolpaths.forEach(toolpath => {
-      const { points, depth } = toolpath;
+      const { points, depth, type } = toolpath;
       
       if (points.length < 2) {
         return;
@@ -196,17 +196,27 @@ class SVGVisualizer {
       const color = this._getDepthColor(normalizedDepth);
       const strokeWidth = 1 + normalizedDepth * 2; // Thicker lines for deeper cuts
       
-      // Create path from points
-      let pathData = `M${points[0].x},${points[0].y}`;
-      
-      for (let i = 1; i < points.length; i++) {
-        pathData += ` L${points[i].x},${points[i].y}`;
+      // Special handling for lines - use straight line segments
+      if (type === 'line') {
+        svg += `<line x1="${points[0].x}" y1="${points[0].y}" x2="${points[1].x}" y2="${points[1].y}" class="toolpath" stroke="${color}" stroke-width="${strokeWidth}" />`;
+        
+        // Add depth indicator at the middle of the line
+        const midX = (points[0].x + points[1].x) / 2;
+        const midY = (points[0].y + points[1].y) / 2;
+        svg += `<text x="${midX + 5}" y="${midY - 5}" class="depth-indicator">${depth}mm</text>`;
+      } else {
+        // Create path from points
+        let pathData = `M${points[0].x},${points[0].y}`;
+        
+        for (let i = 1; i < points.length; i++) {
+          pathData += ` L${points[i].x},${points[i].y}`;
+        }
+        
+        svg += `<path d="${pathData}" class="toolpath" stroke="${color}" stroke-width="${strokeWidth}" />`;
+        
+        // Add depth indicator at the start of the path
+        svg += `<text x="${points[0].x + 5}" y="${points[0].y - 5}" class="depth-indicator">${depth}mm</text>`;
       }
-      
-      svg += `<path d="${pathData}" class="toolpath" stroke="${color}" stroke-width="${strokeWidth}" />`;
-      
-      // Add depth indicator at the start of the path
-      svg += `<text x="${points[0].x + 5}" y="${points[0].y - 5}" class="depth-indicator">${depth}mm</text>`;
     });
     
     // Add origin marker

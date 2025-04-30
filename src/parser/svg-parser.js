@@ -123,6 +123,26 @@ class SVGParser {
       }
     });
     
+    // Get all line elements
+    const lineElements = svgElement.querySelectorAll('line');
+    lineElements.forEach(line => {
+      const x1 = parseFloat(line.getAttribute('x1') || 0);
+      const y1 = parseFloat(line.getAttribute('y1') || 0);
+      const x2 = parseFloat(line.getAttribute('x2') || 0);
+      const y2 = parseFloat(line.getAttribute('y2') || 0);
+      
+      // Convert line to path
+      const d = `M${x1},${y1} L${x2},${y2}`;
+      paths.push({
+        type: 'line',
+        d,
+        fill: null, // Lines don't have fill
+        stroke: this._parseColor(line.getAttribute('stroke')),
+        strokeWidth: parseFloat(line.getAttribute('stroke-width') || 1),
+        id: line.getAttribute('id') || `line_${paths.length}`
+      });
+    });
+    
     // Get all circle elements
     const circleElements = svgElement.querySelectorAll('circle');
     circleElements.forEach(circle => {

@@ -127,6 +127,9 @@ async function handleLoadSVG() {
     saveGcodeBtn.disabled = true;
     statusText.textContent = 'SVG loaded successfully';
     
+    // Save original SVG for debugging
+    await window.api.saveDebugFile(currentSVG.rawData, 'debug_output/original_svg.svg');
+    
   } catch (error) {
     statusText.textContent = `Error: ${error.message}`;
   }
@@ -186,15 +189,71 @@ async function handleConvertSVG() {
     // Convert SVG to GCode
     currentGCode = await window.api.convertSVGToGCode(currentSVG, config);
     
+    // Save GCode for debugging
+    const gcodeText = [
+      ...currentGCode.header,
+      ...currentGCode.commands,
+      ...currentGCode.footer
+    ].join('\n');
+    await window.api.saveDebugFile(gcodeText, 'debug_output/debug_gcode.nc');
+    
+    // Get and save processed data for debugging
+    if (!processedData) {
+      processedData = await window.api.getProcessedData(currentSVG, config);
+    }
+    if (!toolpathData) {
+      toolpathData = await window.api.getToolpathData(currentSVG, config);
+    }
+    
+    // Get and save visualizations
+    const svgVisualization = await window.api.getSVGVisualization(processedData, currentSVG, config);
+    const toolpathVisualization = await window.api.getToolpathVisualization(toolpathData, config);
+    const gcodeVisualization = await window.api.getGCodeVisualization(currentGCode, toolpathData, config);
+    
+    // Extract just the SVG part from the HTML wrapper
+    const extractSvg = (html) => {
+      const match = html.match(/<svg[\s\S]*?<\/svg>/);
+      return match ? match[0] : html;
+    };
+    
+    await window.api.saveDebugFile(extractSvg(svgVisualization), 'debug_output/svg_visualization.svg');
+    await window.api.saveDebugFile(extractSvg(toolpathVisualization), 'debug_output/toolpath_visualization.svg');
+    await window.api.saveDebugFile(extractSvg(gcodeVisualization.match(/<svg[\s\S]*?<\/svg>/)[0]), 'debug_output/gcode_visualization.svg');
+    
+    // Save toolpath data as JSON for debugging
+    await window.api.saveDebugFile(JSON.stringify(toolpathData, null, 2), 'debug_output/toolpath_data.json');
+    
     // Display GCode preview
     displayGCodePreview();
     
     // Enable save button
     saveGcodeBtn.disabled = false;
     
+    statusText.textContent = 'Conversion complete. Debug files saved to debug_output/';
+    
   } catch (error) {
     statusText.textContent = `Error: ${error.message}`;
     convertBtn.disabled = false;
+  }
+}
+
+// Function to save visualization to a file
+async function saveVisualizationToFile(visualizationHtml, filename) {
+  try {
+    // Extract the SVG part from the HTML
+    const svgMatch = visualizationHtml.match(/<svg[\s\S]*?<\/svg>/);
+    
+    if (svgMatch) {
+      await window.api.saveDebugFile(svgMatch[0], filename);
+      console.log(`Saved visualization to ${filename}`);
+      return true;
+    } else {
+      console.error('Could not extract SVG from visualization HTML');
+      return false;
+    }
+  } catch (error) {
+    console.error('Error saving visualization:', error);
+    return false;
   }
 }
 
@@ -225,8 +284,18 @@ function displayGCodePreview() {
   toolpathLinkElem.innerText = 'Toolpath';
   toolpathLinkElem.href = '#';
   
+  const gcodePath3DLinkElem = document.createElement('a');
+  gcodePath3DLinkElem.innerText = '3D Path';
+  gcodePath3DLinkElem.href = '#';
+  
+  const debugLinkElem = document.createElement('a');
+  debugLinkElem.innerText = 'Debug';
+  debugLinkElem.href = '#';
+  
   tabContainer.appendChild(gcodeLinkElem);
   tabContainer.appendChild(toolpathLinkElem);
+  tabContainer.appendChild(gcodePath3DLinkElem);
+  tabContainer.appendChild(debugLinkElem);
   
   // Create container for tab content
   const contentContainer = document.createElement('div');
@@ -268,6 +337,8 @@ function displayGCodePreview() {
     e.preventDefault();
     gcodeLinkElem.className = 'active';
     toolpathLinkElem.className = '';
+    gcodePath3DLinkElem.className = '';
+    debugLinkElem.className = '';
     contentContainer.innerHTML = '';
     contentContainer.appendChild(codePreview);
   });
@@ -276,6 +347,8 @@ function displayGCodePreview() {
     e.preventDefault();
     gcodeLinkElem.className = '';
     toolpathLinkElem.className = 'active';
+    gcodePath3DLinkElem.className = '';
+    debugLinkElem.className = '';
     
     contentContainer.innerHTML = 'Loading toolpath visualization...';
     
@@ -291,6 +364,54 @@ function displayGCodePreview() {
     } catch (error) {
       contentContainer.innerHTML = `Error generating visualization: ${error.message}`;
     }
+  });
+  
+  gcodePath3DLinkElem.addEventListener('click', async (e) => {
+    e.preventDefault();
+    gcodeLinkElem.className = '';
+    toolpathLinkElem.className = '';
+    gcodePath3DLinkElem.className = 'active';
+    debugLinkElem.className = '';
+    
+    contentContainer.innerHTML = 'Loading 3D path visualization...';
+    
+    try {
+      // Request toolpath data if we don't already have it
+      if (!toolpathData) {
+        toolpathData = await window.api.getToolpathData(currentSVG, config);
+      }
+      
+      // Generate 3D visualization
+      const visualizationHtml = await window.api.getGCodeVisualization(currentGCode, toolpathData, config);
+      contentContainer.innerHTML = visualizationHtml;
+    } catch (error) {
+      contentContainer.innerHTML = `Error generating 3D path visualization: ${error.message}`;
+    }
+  });
+  
+  debugLinkElem.addEventListener('click', (e) => {
+    e.preventDefault();
+    gcodeLinkElem.className = '';
+    toolpathLinkElem.className = '';
+    gcodePath3DLinkElem.className = '';
+    debugLinkElem.className = 'active';
+    
+    // Show debug info
+    contentContainer.innerHTML = `
+      <div class="debug-info">
+        <h3>Debug Information</h3>
+        <p>Debug files have been saved to the debug_output/ directory:</p>
+        <ul>
+          <li>Original SVG: debug_output/original_svg.svg</li>
+          <li>GCode: debug_output/debug_gcode.nc</li>
+          <li>SVG Visualization: debug_output/svg_visualization.svg</li>
+          <li>Toolpath Visualization: debug_output/toolpath_visualization.svg</li>
+          <li>GCode Path Visualization: debug_output/gcode_visualization.svg</li>
+          <li>Toolpath Data: debug_output/toolpath_data.json</li>
+        </ul>
+        <p>Use these files to compare between the input and output to identify issues.</p>
+      </div>
+    `;
   });
 }
 

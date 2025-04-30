@@ -98,8 +98,12 @@ class GrayscaleMapper {
     // Get color from fill (preferred) or stroke
     let colorObj = null;
     
-    // First try the path's own fill/stroke
-    if (path.fill) {
+    // Special handling for line elements - they only have stroke
+    if (path.type === 'line') {
+      colorObj = path.stroke;
+    } 
+    // For other elements, try fill first, then stroke
+    else if (path.fill) {
       colorObj = path.fill;
     } else if (path.stroke) {
       colorObj = path.stroke;

@@ -9,6 +9,7 @@ const GrayscaleMapper = require('../processor/grayscale-mapper');
 const PathGenerator = require('../toolpath/path-generator');
 const GCodeGenerator = require('../gcode/gcode-generator');
 const SVGVisualizer = require('../visualization/svg-visualizer');
+const GCodeVisualizer = require('../visualization/gcode-visualizer');
 
 // Initialize IPC handlers
 function initializeIpcHandlers() {
@@ -28,6 +29,23 @@ function initializeIpcHandlers() {
       return null;
     }
     return filePath;
+  });
+
+  // Save debug file
+  ipcMain.handle('save-debug-file', async (_, content, filePath) => {
+    try {
+      // Create directories if they don't exist
+      const directory = path.dirname(filePath);
+      await fs.mkdir(directory, { recursive: true });
+      
+      // Write the file
+      await fs.writeFile(filePath, content, 'utf8');
+      console.log(`Debug file saved: ${filePath}`);
+      return true;
+    } catch (error) {
+      console.error('Error saving debug file:', error);
+      throw new Error(`Failed to save debug file: ${error.message}`);
+    }
   });
 
   // Load SVG file
@@ -194,6 +212,17 @@ function initializeIpcHandlers() {
     } catch (error) {
       console.error('Error generating toolpath visualization:', error);
       throw new Error(`Failed to generate toolpath visualization: ${error.message}`);
+    }
+  });
+  
+  // Get GCode visualization
+  ipcMain.handle('get-gcode-visualization', async (_, gcodeData, toolpathData, config) => {
+    try {
+      const visualizer = new GCodeVisualizer(config);
+      return visualizer.generateGCodePreview(gcodeData, toolpathData);
+    } catch (error) {
+      console.error('Error generating GCode visualization:', error);
+      throw new Error(`Failed to generate GCode visualization: ${error.message}`);
     }
   });
 }

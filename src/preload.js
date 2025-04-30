@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('api', {
   // File operations
   loadSVGFile: (filePath) => ipcRenderer.invoke('load-svg-file', filePath),
   saveGCodeFile: (gcode, filePath) => ipcRenderer.invoke('save-gcode-file', gcode, filePath),
+  saveDebugFile: (content, filePath) => ipcRenderer.invoke('save-debug-file', content, filePath),
   
   // Configuration
   loadConfiguration: () => ipcRenderer.invoke('load-configuration'),
@@ -24,6 +25,8 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.invoke('get-svg-visualization', processedData, svgData, config),
   getToolpathVisualization: (toolpathData, config) => 
     ipcRenderer.invoke('get-toolpath-visualization', toolpathData, config),
+  getGCodeVisualization: (gcodeData, toolpathData, config) =>
+    ipcRenderer.invoke('get-gcode-visualization', gcodeData, toolpathData, config),
   
   // Event listeners
   on: (channel, callback) => {
