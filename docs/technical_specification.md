@@ -6,6 +6,8 @@ This document details the technical specifications for the SVG to GCode converte
 
 ## Data Models
 
+(See [Architecture Design - Component Architecture](architecture_design.md#component-architecture-diagram) for context)
+
 ### 1. SVG Input Model
 
 ```typescript
@@ -178,6 +180,8 @@ interface GCodeMetadata {
 
 ### 6. Configuration Model
 
+(See [Technology Stack](technology_stack.md) for technologies used)
+
 ```typescript
 // User configuration
 interface Configuration {
@@ -246,6 +250,8 @@ enum GCodeFlavor {
 
 ## API Specifications
 
+(See [Architecture Design - Core Components](architecture_design.md#core-components) for context)
+
 ### 1. Input Handler API
 
 ```typescript
@@ -301,6 +307,8 @@ interface ValidationResult {
 
 ### 2. SVG Parser API
 
+(Uses libraries detailed in [Technology Stack - SVG Processing](technology_stack.md#svg-processing))
+
 ```typescript
 /**
  * Handles parsing SVG content into path data
@@ -338,6 +346,8 @@ interface SVGParserAPI {
 ```
 
 ### 3. Path Processor API
+
+(Uses algorithms detailed below and libraries from [Technology Stack - SVG Processing](technology_stack.md#svg-processing))
 
 ```typescript
 /**
@@ -377,6 +387,8 @@ interface PathProcessorAPI {
 ```
 
 ### 4. Toolpath Generator API
+
+(Implements algorithms detailed below)
 
 ```typescript
 /**
@@ -419,6 +431,8 @@ interface ToolpathGeneratorAPI {
 
 ### 5. GCode Generator API
 
+(Implements algorithms detailed below, see [Technology Stack - GCode Generation](technology_stack.md#gcode-generation))
+
 ```typescript
 /**
  * Handles generating GCode from toolpaths
@@ -458,6 +472,8 @@ interface GCodeGeneratorAPI {
 ```
 
 ### 6. Visualization API
+
+(Uses technologies from [Technology Stack - Frontend](technology_stack.md#frontend))
 
 ```typescript
 /**

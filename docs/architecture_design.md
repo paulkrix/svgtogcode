@@ -42,6 +42,8 @@ flowchart LR
 - SVG format validation
 - Configuration persistence
 
+(See [Input Handler API](technical_specification.md#1-input-handler-api))
+
 ### 2. SVG Parser
 **Purpose**: Extracts vector path and color information from SVG files.
 
@@ -53,9 +55,11 @@ flowchart LR
 - Handle transformations and groupings
 
 **Technical Approach**:
-- Leverage an open-source SVG parsing library
+- Leverage an open-source SVG parsing library (See [Technology Stack](technology_stack.md#svg-processing))
 - Create an intermediate representation of paths and attributes
 - Normalize to a common coordinate system
+
+(See [SVG Parser API](technical_specification.md#2-svg-parser-api))
 
 ### 3. Path Processor
 **Purpose**: Converts SVG paths into machining-ready paths with associated depth information.
@@ -68,9 +72,11 @@ flowchart LR
 - Handle filled areas and convert to appropriate toolpaths
 
 **Technical Approach**:
-- Path simplification algorithms
-- Grayscale mapping functions (linear, custom curves)
-- Path combination and optimization
+- Path simplification algorithms (See [Path Simplification Algorithm](technical_specification.md#3-svg-path-simplification-algorithm))
+- Grayscale mapping functions (linear, custom curves) (See [Grayscale to Depth Mapping Algorithm](technical_specification.md#1-grayscale-to-depth-mapping-algorithm))
+- Path combination and optimization (See [Path Optimization Algorithm](technical_specification.md#2-path-optimization-algorithm))
+
+(See [Path Processor API](technical_specification.md#3-path-processor-api))
 
 ### 4. Toolpath Generator
 **Purpose**: Creates machine-specific toolpaths with appropriate cutting parameters.
@@ -83,10 +89,12 @@ flowchart LR
 - Consider machine constraints
 
 **Technical Approach**:
-- Path to toolpath conversion algorithms
+- Path to toolpath conversion algorithms (See [Toolpath Generation Algorithm](technical_specification.md#4-toolpath-generation-algorithm))
 - Cutting strategy implementation (contour, pocket, etc.)
 - Machine constraints management
 - Collision avoidance
+
+(See [Toolpath Generator API](technical_specification.md#4-toolpath-generator-api))
 
 ### 5. GCode Generator
 **Purpose**: Produces GRBL-compatible GCode from toolpaths.
@@ -99,9 +107,11 @@ flowchart LR
 - Format output file
 
 **Technical Approach**:
-- GRBL-specific command generation
+- GRBL-specific command generation (See [GRBL-Specific GCode Generation](technical_specification.md#5-grbl-specific-gcode-generation))
 - GCode optimization techniques
 - Proper command sequencing
+
+(See [GCode Generator API](technical_specification.md#5-gcode-generator-api))
 
 ### 6. Visualization Engine
 **Purpose**: Provides visual feedback throughout the conversion process.
@@ -114,9 +124,11 @@ flowchart LR
 - Support interactive preview
 
 **Technical Approach**:
-- 2D rendering engine
+- 2D rendering engine (See [Technology Stack](technology_stack.md#frontend))
 - Color-coded toolpath visualization
 - Support for zooming and panning
+
+(See [Visualization API](technical_specification.md#6-visualization-api))
 
 ### 7. User Interface
 **Purpose**: Provides user interaction for file handling, parameter configuration, and visualization.
@@ -129,10 +141,12 @@ flowchart LR
 - Handle error reporting
 
 **Technical Approach**:
-- Modern desktop UI framework
+- Modern desktop UI framework (See [Technology Stack](technology_stack.md#frontend))
 - Responsive design for different screen sizes
 - Intuitive control layout
 - Streamlined workflow
+
+(See [User Interface Section in Technical Specification](technical_specification.md#ui-specifications) - *Note: Section needs to be added in Tech Spec*)
 
 ### Component Class Diagram
 
@@ -355,6 +369,8 @@ flowchart TB
 - Desktop UI framework
 - File system access library
 - Geometry processing libraries
+
+(See [Technology Stack](technology_stack.md) for full list)
 
 ### Performance Considerations
 - Efficient path optimization algorithms

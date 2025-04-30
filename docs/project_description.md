@@ -89,13 +89,13 @@ Convert topographical data represented as grayscale images into 3D-carved relief
 
 ## Technical Approach
 
-The software will employ a multi-stage processing pipeline:
+The software will employ a multi-stage processing pipeline, detailed further in the [Architecture Design](architecture_design.md):
 
 1. **SVG Parsing**: Using a robust SVG parsing library to extract all vector data
 2. **Path Analysis**: Converting complex paths to simpler segments and analyzing their properties
-3. **Grayscale Evaluation**: Determining depth values based on grayscale color data
-4. **Toolpath Generation**: Creating optimized toolpaths considering machine constraints
-5. **GCode Formatting**: Producing machine-specific GCode with appropriate commands and parameters
+3. **Grayscale Evaluation**: Determining depth values based on grayscale color data (See [Grayscale Mapping in Technical Specification](technical_specification.md#1-grayscale-to-depth-mapping-algorithm))
+4. **Toolpath Generation**: Creating optimized toolpaths considering machine constraints (See [Toolpath Generation in Technical Specification](technical_specification.md#4-toolpath-generation-algorithm))
+5. **GCode Formatting**: Producing machine-specific GCode with appropriate commands and parameters (See [GCode Generation in Technical Specification](technical_specification.md#5-grbl-specific-gcode-generation))
 
 ## Open Source Philosophy
 
