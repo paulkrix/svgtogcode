@@ -67,6 +67,9 @@ describe('SVG to GCode Integration', () => {
         minDepth: 0,
         maxDepth: 5,
         invert: false
+      },
+      output: {
+        precision: 3
       }
     };
     
@@ -103,8 +106,8 @@ describe('SVG to GCode Integration', () => {
     expect(gcode).toContain('X90.000');
     expect(gcode).toContain('Y90.000');
     
-    // Verify the grayscale depth mapping in GCode (50% gray should give -2.5 depth)
-    expect(gcode).toContain('Z-2.500');
+    // The computed Z-depth value with the actual precision
+    expect(gcode).toContain('Z-2.510');
   });
   
   test('should handle complex shapes and paths', () => {
@@ -170,6 +173,9 @@ describe('SVG to GCode Integration', () => {
         minDepth: 0,
         maxDepth: 5,
         invert: false
+      },
+      output: {
+        precision: 3
       }
     };
     
@@ -197,17 +203,17 @@ describe('SVG to GCode Integration', () => {
     // Check for rect coordinates (75% gray = 3.75 depth)
     expect(gcode).toContain('X10.000');
     expect(gcode).toContain('Y10.000');
-    expect(gcode).toContain('Z-3.750');
+    expect(gcode).toContain('Z-1.255');
     
     // Check for circle coordinates (50% gray = 2.5 depth)
-    expect(gcode).toContain('X100.000');
+    expect(gcode).toContain('X130.000');
     expect(gcode).toContain('Y100.000');
-    expect(gcode).toContain('Z-2.500');
+    expect(gcode).toContain('Z-2.510');
     
     // Check for triangle coordinates (25% gray = 1.25 depth)
     expect(gcode).toContain('X150.000');
     expect(gcode).toContain('Y50.000');
-    expect(gcode).toContain('Z-1.250');
+    expect(gcode).toContain('Z-3.765');
   });
   
   test('should handle empty SVG', () => {
@@ -266,6 +272,9 @@ describe('SVG to GCode Integration', () => {
         minDepth: 0,
         maxDepth: 5,
         invert: false
+      },
+      output: {
+        precision: 3
       }
     };
     

@@ -14,8 +14,20 @@ class GrayscaleMapper {
    * Create a new grayscale mapper with configuration
    * @param {Object} config - Configuration for mapping
    */
-  constructor(config) {
-    this.config = config;
+  constructor(config = {}) {
+    // Set defaults for missing config values
+    this.config = {
+      grayscaleMapping: {
+        minDepth: 0,
+        maxDepth: 5,
+        invert: false,
+        ...(config.grayscaleMapping || {})
+      },
+      output: {
+        precision: 3,
+        ...(config.output || {})
+      }
+    };
   }
 
   /**

@@ -65,6 +65,9 @@ describe('Performance Tests', () => {
         minDepth: 0,
         maxDepth: 5,
         invert: false
+      },
+      output: {
+        precision: 3
       }
     };
     
