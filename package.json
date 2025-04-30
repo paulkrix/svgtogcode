@@ -1,0 +1,38 @@
+{
+  "name": "svg-to-gcode-converter",
+  "version": "0.1.0",
+  "description": "Convert SVG files to GCode with grayscale-to-depth mapping for GRBL controllers",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "test": "jest",
+    "lint": "eslint src/**/*.js",
+    "build": "webpack --mode production"
+  },
+  "keywords": [
+    "svg",
+    "gcode",
+    "cnc",
+    "converter",
+    "grbl",
+    "grayscale"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "electron": "^26.1.0",
+    "jsdom": "^22.1.0",
+    "svg-parser": "^2.0.4",
+    "svgpath": "^2.6.0",
+    "bezier-js": "^6.1.4",
+    "color-convert": "^2.0.1"
+  },
+  "devDependencies": {
+    "jest": "^29.6.4",
+    "eslint": "^8.48.0",
+    "nodemon": "^3.0.1",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4"
+  }
+} 
