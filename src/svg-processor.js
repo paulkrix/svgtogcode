@@ -130,22 +130,41 @@ class SVGProcessor {
       
       const { paths } = processedData;
       
-      if (!paths) {
-        throw new Error('No processed SVG data available');
+      if (!paths || paths.length === 0) {
+        console.warn('No paths available for toolpath generation');
+        
+        // Return empty toolpaths object
+        return {
+          toolpaths: [],
+          config
+        };
       }
       
+      console.log(`Generating toolpaths for ${paths.length} paths...`);
+      
       // Generate toolpaths based on configuration
-      const toolpaths = paths.map(path => {
-        // For each path, generate a toolpath based on the config
-        // This would include depth calculation, tool offsets, etc.
-        return this.generateToolpath(path, config);
-      });
+      const toolpaths = [];
+      
+      // Process each path
+      for (const path of paths) {
+        try {
+          // For each path, generate a toolpath based on the config
+          const toolpath = this.generateToolpath(path, config);
+          if (toolpath && toolpath.points && toolpath.points.length > 0) {
+            toolpaths.push(toolpath);
+          }
+        } catch (error) {
+          console.error(`Error generating toolpath for path:`, error);
+        }
+      }
       
       // Store toolpath data for later use
       this.toolpathData = {
         toolpaths,
         config
       };
+      
+      console.log(`Generated ${toolpaths.length} toolpaths`);
       
       return this.toolpathData;
     } catch (error) {
@@ -163,9 +182,26 @@ class SVGProcessor {
   generateGCode(toolpathData, config) {
     console.log("Generating GCode...");
     
-    if (!toolpathData || !toolpathData.toolpaths) {
-      console.error("Error: No toolpath data available for GCode generation");
-      throw new Error("No toolpath data available for GCode generation");
+    // Check if toolpathData is valid and has toolpaths
+    if (!toolpathData) {
+      console.error("Error: No toolpath data provided for GCode generation");
+      throw new Error("No toolpath data provided for GCode generation");
+    }
+    
+    if (!toolpathData.toolpaths) {
+      console.error("Error: Invalid toolpath data format - missing toolpaths array");
+      throw new Error("Invalid toolpath data format - missing toolpaths array");
+    }
+    
+    if (toolpathData.toolpaths.length === 0) {
+      console.warn("Warning: No toolpaths found in toolpath data");
+      // Return minimum valid GCode
+      return `; SVG to GCode - Empty GCode (no toolpaths)
+; Generated: ${new Date().toISOString()}
+G21 ; Set units to mm
+G90 ; Set to absolute positioning
+G0 Z5 ; Move to safe height
+M2 ; End program`;
     }
     
     try {
@@ -202,6 +238,14 @@ class SVGProcessor {
       
       // Generate GCode
       const gcodeData = gCodeGenerator.generate(toolpathData);
+      
+      if (!gcodeData || 
+          !Array.isArray(gcodeData.commands) || 
+          !Array.isArray(gcodeData.header) || 
+          !Array.isArray(gcodeData.footer)) {
+        console.error("Error: Invalid GCode data returned from generator");
+        throw new Error("Invalid GCode data returned from generator");
+      }
       
       // Return the formatted GCode as a string, which is what the main application expects
       return [
@@ -465,17 +509,47 @@ class SVGProcessor {
         const x2 = parseFloat(node.properties?.x2 || 0);
         const y2 = parseFloat(node.properties?.y2 || 0);
         
-        // Create path data for the line
+        // Validate line coordinates
+        if (isNaN(x1) || isNaN(y1) || isNaN(x2) || isNaN(y2)) {
+          console.warn("Invalid line parameters, skipping", { x1, y1, x2, y2 });
+          return;
+        }
+        
+        // Create path data for line (simple M + L commands)
         const d = `M${x1},${y1} L${x2},${y2}`;
         
-        paths.push({
-          type: 'path',
-          d: d,
-          fill: null,
-          stroke: node.properties?.stroke || '#000000',
-          strokeWidth: parseFloat(node.properties?.['stroke-width'] || 1),
-          transform: transform + (node.properties?.transform || '')
-        });
+        console.log(`Generated line path: ${d}`);
+        
+        // Only add stroke path for lines (lines typically don't have fill)
+        if (node.properties?.stroke && node.properties?.stroke !== 'none') {
+          const strokeWidth = parseFloat(node.properties?.['stroke-width'] || 1);
+          paths.push({
+            type: 'path',
+            originalType: 'line',
+            d: d,
+            fill: 'none',
+            stroke: node.properties.stroke,
+            strokeWidth: strokeWidth,
+            transform: transform + (node.properties?.transform || ''),
+            id: node.properties?.id || `line_${paths.length}`,
+            // Original line coordinates for reference
+            x1, y1, x2, y2
+          });
+        } else {
+          // If no stroke is specified, use a default
+          paths.push({
+            type: 'path',
+            originalType: 'line',
+            d: d,
+            fill: 'none',
+            stroke: '#000000',
+            strokeWidth: 1,
+            transform: transform + (node.properties?.transform || ''),
+            id: node.properties?.id || `line_${paths.length}`,
+            // Original line coordinates for reference
+            x1, y1, x2, y2
+          });
+        }
       }
       
       // For groups, process all children with accumulated transforms
@@ -580,24 +654,243 @@ class SVGProcessor {
   _extractPathSegments(pathData) {
     const segments = [];
     
-    // Very simple regex-based parser for demonstration
-    // A production implementation would use a proper SVG path parser
+    if (!pathData || typeof pathData !== 'string') {
+      console.error('Invalid path data:', pathData);
+      return segments;
+    }
     
-    // Match commands like M, L, C, Z, etc. followed by their parameters
-    const commandRegex = /([MLHVCSQTAZmlhvcsqtaz])([^MLHVCSQTAZmlhvcsqtaz]*)/g;
-    let match;
-    
-    while ((match = commandRegex.exec(pathData)) !== null) {
-      const command = match[1];
-      const params = match[2].trim()
-        .split(/[\s,]+/)
-        .filter(p => p !== '')
-        .map(parseFloat);
+    try {
+      // Match commands and their parameters with improved regex
+      // This handles space and comma-separated values and multiple parameters per command
+      const commandRegex = /([MLHVCSQTAZmlhvcsqtaz])([^MLHVCSQTAZmlhvcsqtaz]*)/g;
+      let match;
+      let currentX = 0;
+      let currentY = 0;
       
-      segments.push({
-        command,
-        params
-      });
+      while ((match = commandRegex.exec(pathData)) !== null) {
+        const command = match[1];
+        // Split params by commas or spaces, filter empty strings, and parse to floats
+        const params = match[2].trim()
+          .split(/[\s,]+/)
+          .filter(p => p !== '')
+          .map(parseFloat);
+        
+        // Handle empty parameters
+        if (params.length === 0 && (command === 'Z' || command === 'z')) {
+          // Z command doesn't need parameters
+          segments.push({ command, params: [] });
+          continue;
+        }
+        
+        // Handle relative commands by converting to absolute coordinates
+        if (command === command.toLowerCase() && command !== 'z') {
+          const isRelative = true;
+          const absoluteParams = [];
+          
+          switch (command) {
+            case 'm': // Move relative
+            case 'l': // Line relative
+              for (let i = 0; i < params.length; i += 2) {
+                const x = currentX + params[i];
+                const y = currentY + params[i + 1];
+                absoluteParams.push(x, y);
+                currentX = x;
+                currentY = y;
+              }
+              // Use absolute command equivalent
+              segments.push({ 
+                command: command === 'm' ? 'M' : 'L',
+                params: absoluteParams,
+                isRelative
+              });
+              break;
+              
+            case 'h': // Horizontal line relative
+              for (let i = 0; i < params.length; i++) {
+                const x = currentX + params[i];
+                absoluteParams.push(x);
+                currentX = x;
+              }
+              segments.push({ command: 'H', params: absoluteParams, isRelative });
+              break;
+              
+            case 'v': // Vertical line relative
+              for (let i = 0; i < params.length; i++) {
+                const y = currentY + params[i];
+                absoluteParams.push(y);
+                currentY = y;
+              }
+              segments.push({ command: 'V', params: absoluteParams, isRelative });
+              break;
+              
+            case 'c': // Cubic bezier relative
+              for (let i = 0; i < params.length; i += 6) {
+                if (i + 5 >= params.length) break; // Ensure we have all 6 parameters
+                
+                const x1 = currentX + params[i];
+                const y1 = currentY + params[i + 1];
+                const x2 = currentX + params[i + 2];
+                const y2 = currentY + params[i + 3];
+                const x = currentX + params[i + 4];
+                const y = currentY + params[i + 5];
+                
+                absoluteParams.push(x1, y1, x2, y2, x, y);
+                currentX = x;
+                currentY = y;
+              }
+              segments.push({ command: 'C', params: absoluteParams, isRelative });
+              break;
+              
+            case 's': // Smooth cubic bezier relative
+              for (let i = 0; i < params.length; i += 4) {
+                if (i + 3 >= params.length) break; // Ensure we have all 4 parameters
+                
+                const x2 = currentX + params[i];
+                const y2 = currentY + params[i + 1];
+                const x = currentX + params[i + 2];
+                const y = currentY + params[i + 3];
+                
+                absoluteParams.push(x2, y2, x, y);
+                currentX = x;
+                currentY = y;
+              }
+              segments.push({ command: 'S', params: absoluteParams, isRelative });
+              break;
+              
+            case 'q': // Quadratic bezier relative
+              for (let i = 0; i < params.length; i += 4) {
+                if (i + 3 >= params.length) break; // Ensure we have all 4 parameters
+                
+                const x1 = currentX + params[i];
+                const y1 = currentY + params[i + 1];
+                const x = currentX + params[i + 2];
+                const y = currentY + params[i + 3];
+                
+                absoluteParams.push(x1, y1, x, y);
+                currentX = x;
+                currentY = y;
+              }
+              segments.push({ command: 'Q', params: absoluteParams, isRelative });
+              break;
+              
+            case 't': // Smooth quadratic bezier relative
+              for (let i = 0; i < params.length; i += 2) {
+                if (i + 1 >= params.length) break; // Ensure we have both parameters
+                
+                const x = currentX + params[i];
+                const y = currentY + params[i + 1];
+                
+                absoluteParams.push(x, y);
+                currentX = x;
+                currentY = y;
+              }
+              segments.push({ command: 'T', params: absoluteParams, isRelative });
+              break;
+              
+            case 'a': // Arc relative
+              for (let i = 0; i < params.length; i += 7) {
+                if (i + 6 >= params.length) break; // Ensure we have all 7 parameters
+                
+                const rx = params[i];
+                const ry = params[i + 1];
+                const angle = params[i + 2];
+                const largeArc = params[i + 3];
+                const sweep = params[i + 4];
+                const x = currentX + params[i + 5];
+                const y = currentY + params[i + 6];
+                
+                absoluteParams.push(rx, ry, angle, largeArc, sweep, x, y);
+                currentX = x;
+                currentY = y;
+              }
+              segments.push({ command: 'A', params: absoluteParams, isRelative });
+              break;
+          }
+        } else {
+          // Handle absolute commands
+          switch (command) {
+            case 'M': // Move absolute
+            case 'L': // Line absolute
+              for (let i = 0; i < params.length; i += 2) {
+                if (i + 1 >= params.length) break;
+                currentX = params[i];
+                currentY = params[i + 1];
+              }
+              segments.push({ command, params });
+              break;
+              
+            case 'H': // Horizontal line absolute
+              for (let i = 0; i < params.length; i++) {
+                currentX = params[i];
+              }
+              segments.push({ command, params });
+              break;
+              
+            case 'V': // Vertical line absolute
+              for (let i = 0; i < params.length; i++) {
+                currentY = params[i];
+              }
+              segments.push({ command, params });
+              break;
+              
+            case 'C': // Cubic bezier absolute
+              for (let i = 0; i < params.length; i += 6) {
+                if (i + 5 >= params.length) break;
+                currentX = params[i + 4];
+                currentY = params[i + 5];
+              }
+              segments.push({ command, params });
+              break;
+              
+            case 'S': // Smooth cubic bezier absolute
+              for (let i = 0; i < params.length; i += 4) {
+                if (i + 3 >= params.length) break;
+                currentX = params[i + 2];
+                currentY = params[i + 3];
+              }
+              segments.push({ command, params });
+              break;
+              
+            case 'Q': // Quadratic bezier absolute
+              for (let i = 0; i < params.length; i += 4) {
+                if (i + 3 >= params.length) break;
+                currentX = params[i + 2];
+                currentY = params[i + 3];
+              }
+              segments.push({ command, params });
+              break;
+              
+            case 'T': // Smooth quadratic bezier absolute
+              for (let i = 0; i < params.length; i += 2) {
+                if (i + 1 >= params.length) break;
+                currentX = params[i];
+                currentY = params[i + 1];
+              }
+              segments.push({ command, params });
+              break;
+              
+            case 'A': // Arc absolute
+              for (let i = 0; i < params.length; i += 7) {
+                if (i + 6 >= params.length) break;
+                currentX = params[i + 5];
+                currentY = params[i + 6];
+              }
+              segments.push({ command, params });
+              break;
+              
+            case 'Z': // Close path
+            case 'z':
+              segments.push({ command: 'Z', params: [] });
+              break;
+              
+            default:
+              console.warn(`Unsupported path command: ${command}`);
+              break;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing path segments:', error);
     }
     
     return segments;
@@ -761,7 +1054,7 @@ class SVGProcessor {
    * @returns {Object} - Toolpath data
    */
   generateToolpath(path, config) {
-    const { type, d, originalType, cx, cy, r } = path;
+    const { type, d, originalType, cx, cy, r, x1, y1, x2, y2 } = path;
     
     // Calculate depth based on grayscale value
     const { minDepth, maxDepth, invert } = config.grayscaleMapping || { minDepth: 0.5, maxDepth: 5, invert: false };
@@ -783,380 +1076,219 @@ class SVGProcessor {
     console.log(`Generating toolpath for path`);
     console.log(`Path depth: ${depth}mm (grayscale: ${grayscaleValue})`);
     
+    // Case 1: Circle paths - handle specially for better results
     if (originalType === 'circle' && cx !== undefined && cy !== undefined && r !== undefined) {
-      // This was originally a circle - handle it directly
       console.log(`Generating circle toolpath: cx=${cx}, cy=${cy}, r=${r}`);
       
-      const points = [];
-      const resolution = config.toolpath?.resolution || 72;
-      
-      // Generate points around the circle
-      for (let i = 0; i <= resolution; i++) {
-        const angle = (i / resolution) * Math.PI * 2;
-        points.push({
-          x: cx + r * Math.cos(angle),
-          y: cy + r * Math.sin(angle)
-        });
-      }
-      
-      // Add Z-depth to each point
-      const pointsWithDepth = points.map(p => ({
-        ...p,
-        z: -depth // Negative depth for CNC (Z goes down)
-      }));
-      
-      return {
-        points: [
-          // First point at Z=0 (approach)
-          { ...pointsWithDepth[0], z: 0 },
-          // Points at cutting depth
-          ...pointsWithDepth,
-          // Last point back at Z=0 (retract)
-          { ...pointsWithDepth[pointsWithDepth.length - 1], z: 0 }
-        ],
-        depth,
-        bounds: {
-          minX: cx - r,
-          minY: cy - r,
-          maxX: cx + r,
-          maxY: cy + r
-        },
-        originalPath: d
-      };
+      return this._generateCircleToolpath(cx, cy, r, depth, config);
     }
     
-    // Handle path data with segments
-    if (type === 'path' && d) {
-      // Check for any Arc commands (A)
-      if (d.includes('A') || d.includes('a')) {
-        console.log('Unhandled path command: A');
+    // Case 2: Line paths - handle direct line generation for better results
+    if (originalType === 'line' && x1 !== undefined && y1 !== undefined && x2 !== undefined && y2 !== undefined) {
+      console.log(`Generating line toolpath: (${x1},${y1}) to (${x2},${y2})`);
+      
+      return this._generateLineToolpath(x1, y1, x2, y2, depth);
+    }
+    
+    // Case 3: Path with arc commands - detect and handle specially
+    if (type === 'path' && d && (d.includes('A') || d.includes('a'))) {
+      console.log('Found path with arc commands');
+      
+      // Check for circle pattern in arc commands
+      const circlePattern = /M\s*([0-9.-]+),\s*([0-9.-]+)\s*A\s*([0-9.-]+),\s*([0-9.-]+)\s+0\s+1\s+1\s+([0-9.-]+),\s*([0-9.-]+)/i;
+      const match = d.match(circlePattern);
+      
+      if (match) {
+        // Extract circle parameters
+        const x1 = parseFloat(match[1]);
+        const y1 = parseFloat(match[2]);
+        const rx = parseFloat(match[3]);
+        const ry = parseFloat(match[4]);
+        const x2 = parseFloat(match[5]);
+        const y2 = parseFloat(match[6]);
         
-        // Check for circle pattern
-        const circlePattern = /M\s*([0-9.-]+),\s*([0-9.-]+)\s*A\s*([0-9.-]+),\s*([0-9.-]+)\s+0\s+1\s+1\s+([0-9.-]+),\s*([0-9.-]+)/i;
-        const match = d.match(circlePattern);
-        
-        if (match) {
-          // Extract circle parameters
-          const x1 = parseFloat(match[1]);
-          const y1 = parseFloat(match[2]);
-          const rx = parseFloat(match[3]);
-          const ry = parseFloat(match[4]);
-          const x2 = parseFloat(match[5]);
-          const y2 = parseFloat(match[6]);
+        // Check if it's a circle
+        if (Math.abs(rx - ry) < 0.01) {
+          console.log(`Detected circle arc: x1=${x1}, y1=${y1}, r=${rx}`);
           
-          // Check if it's a circle
-          if (Math.abs(rx - ry) < 0.01) {
-            // It's likely a circle or an arc
-            console.log(`Detected circle arc: x1=${x1}, y1=${y1}, r=${rx}`);
-            
-            let cx, cy, r;
-            
-            // Check if it's a half circle
-            if (Math.abs(x2 - x1) > 1.5 * rx && Math.abs(y2 - y1) < 0.01) {
-              // Horizontal half circle
-              cx = (x1 + x2) / 2;
-              cy = y1;
-              r = rx;
-              console.log(`Processing as horizontal half circle: cx=${cx}, cy=${cy}, r=${r}`);
-            } else if (Math.abs(x2 - x1) < 0.01 && Math.abs(y2 - y1) > 1.5 * ry) {
-              // Vertical half circle
-              cx = x1;
-              cy = (y1 + y2) / 2;
-              r = ry;
-              console.log(`Processing as vertical half circle: cx=${cx}, cy=${cy}, r=${r}`);
-            } else if (Math.abs(x2 - x1) < 0.01 && Math.abs(y2 - y1) < 0.01) {
-              // Full circle
-              cx = x1 + rx; // Adjust based on where the arc starts
-              cy = y1;
-              r = rx;
-              console.log(`Processing as full circle: cx=${cx}, cy=${cy}, r=${r}`);
-            } else {
-              // Generic arc
-              console.log('Processing as generic arc');
-              // Fall back to segmentation
-              return this._segmentsToPoints(path.segments, depth);
-            }
-            
-            // Generate points around the circle/arc
-            const points = [];
-            const resolution = config.toolpath?.resolution || 72;
-            
-            for (let i = 0; i <= resolution; i++) {
-              const angle = (i / resolution) * Math.PI * 2;
-              points.push({
-                x: cx + r * Math.cos(angle),
-                y: cy + r * Math.sin(angle)
-              });
-            }
-            
-            // Add Z-depth to each point
-            const pointsWithDepth = points.map(p => ({
-              ...p,
-              z: -depth // Negative depth for CNC (Z goes down)
-            }));
-            
-            return {
-              points: [
-                // First point at Z=0 (approach)
-                { ...pointsWithDepth[0], z: 0 },
-                // Points at cutting depth
-                ...pointsWithDepth,
-                // Last point back at Z=0 (retract)
-                { ...pointsWithDepth[pointsWithDepth.length - 1], z: 0 }
-              ],
-              depth,
-              bounds: {
-                minX: cx - r,
-                minY: cy - r,
-                maxX: cx + r,
-                maxY: cy + r
-              },
-              originalPath: d
-            };
+          let cx, cy, r;
+          
+          // Check if it's a half circle
+          if (Math.abs(x2 - x1) > 1.5 * rx && Math.abs(y2 - y1) < 0.01) {
+            // Horizontal half circle
+            cx = (x1 + x2) / 2;
+            cy = y1;
+            r = rx;
+            console.log(`Processing as horizontal half circle: cx=${cx}, cy=${cy}, r=${r}`);
+          } else if (Math.abs(x2 - x1) < 0.01 && Math.abs(y2 - y1) > 1.5 * ry) {
+            // Vertical half circle
+            cx = x1;
+            cy = (y1 + y2) / 2;
+            r = ry;
+            console.log(`Processing as vertical half circle: cx=${cx}, cy=${cy}, r=${r}`);
+          } else if (Math.abs(x2 - x1) < 0.01 && Math.abs(y2 - y1) < 0.01) {
+            // Full circle
+            cx = x1 + rx; // Adjust based on where the arc starts
+            cy = y1;
+            r = rx;
+            console.log(`Processing as full circle: cx=${cx}, cy=${cy}, r=${r}`);
+          } else {
+            // Generic arc
+            console.log('Processing as generic arc');
+            // Fall back to segmentation
+            return this._segmentsToToolpath(path.segments, depth, path.bounds);
           }
+          
+          return this._generateCircleToolpath(cx, cy, r, depth, config);
         }
       }
-      
-      // Process path segments
-      return this._segmentsToPoints(path.segments, depth);
     }
     
-    // For other types or fallback
-    console.log(`Using default segment processing for path`);
-    return this._segmentsToPoints(path.segments, depth);
+    // Case 4: Standard path processing for all other cases
+    return this._segmentsToToolpath(path.segments, depth, path.bounds);
   }
   
   /**
-   * Convert path segments to toolpath points
+   * Generate circle toolpath
+   * @private
+   * @param {number} cx - Center X
+   * @param {number} cy - Center Y
+   * @param {number} r - Radius
+   * @param {number} depth - Cutting depth
+   * @param {Object} config - Configuration
+   * @returns {Object} - Toolpath
+   */
+  _generateCircleToolpath(cx, cy, r, depth, config) {
+    const points = [];
+    const resolution = config.toolpath?.resolution || 72;
+      
+    // Generate points around the circle
+    for (let i = 0; i <= resolution; i++) {
+      const angle = (i / resolution) * Math.PI * 2;
+      points.push({
+        x: cx + r * Math.cos(angle),
+        y: cy + r * Math.sin(angle)
+      });
+    }
+    
+    // Add Z-depth to each point
+    const pointsWithDepth = points.map(p => ({
+      ...p,
+      z: -depth // Negative depth for CNC (Z goes down)
+    }));
+    
+    return {
+      points: [
+        // First point at Z=0 (approach)
+        { ...pointsWithDepth[0], z: 0, penUp: true },
+        // Points at cutting depth
+        ...pointsWithDepth.map(p => ({ ...p, penUp: false })),
+        // Last point back at Z=0 (retract)
+        { ...pointsWithDepth[pointsWithDepth.length - 1], z: 0, penUp: true }
+      ],
+      depth,
+      bounds: {
+        minX: cx - r,
+        minY: cy - r,
+        maxX: cx + r,
+        maxY: cy + r
+      }
+    };
+  }
+  
+  /**
+   * Generate line toolpath
+   * @private
+   * @param {number} x1 - Start X
+   * @param {number} y1 - Start Y
+   * @param {number} x2 - End X
+   * @param {number} y2 - End Y
+   * @param {number} depth - Cutting depth
+   * @returns {Object} - Toolpath
+   */
+  _generateLineToolpath(x1, y1, x2, y2, depth) {
+    const points = [
+      { x: x1, y: y1, z: 0, penUp: true },    // Approach
+      { x: x1, y: y1, z: -depth, penUp: false }, // Plunge
+      { x: x2, y: y2, z: -depth, penUp: false }, // Cut
+      { x: x2, y: y2, z: 0, penUp: true }     // Retract
+    ];
+    
+    return {
+      points,
+      depth,
+      bounds: {
+        minX: Math.min(x1, x2),
+        minY: Math.min(y1, y2),
+        maxX: Math.max(x1, x2),
+        maxY: Math.max(y1, y2)
+      }
+    };
+  }
+  
+  /**
+   * Convert path segments to a proper toolpath
    * @private
    * @param {Array} segments - Path segments
    * @param {number} depth - Cutting depth
-   * @returns {Array} - Array of points with x, y, z coordinates
+   * @param {Object} bounds - Bounds of the path
+   * @returns {Object} - Toolpath object
    */
-  _segmentsToPoints(segments, depth) {
+  _segmentsToToolpath(segments, depth, bounds) {
     if (!segments || segments.length === 0) {
-      // Return a simple square toolpath if no segments
-      return [
-        { x: 10, y: 10, z: 0 },      // Starting point, safe Z
-        { x: 10, y: 10, z: -depth },  // Plunge
-        { x: 90, y: 10, z: -depth },
-        { x: 90, y: 90, z: -depth },
-        { x: 10, y: 90, z: -depth },
-        { x: 10, y: 10, z: -depth },
-        { x: 10, y: 10, z: 0 }       // Retract to safe Z
-      ];
+      console.warn('No segments provided for toolpath generation');
+      return {
+        points: [],
+        depth: depth,
+        bounds: bounds || { minX: 0, minY: 0, maxX: 0, maxY: 0 }
+      };
     }
     
-    const points = [];
-    let currentX = 0;
-    let currentY = 0;
-    let firstX = null;
-    let firstY = null;
-    let penDown = false;
-    let lastCommand = null;
+    // Generate points from segments
+    const pathPoints = this._segmentsToPoints(segments, depth);
     
-    const ensurePenUp = () => {
-      if (penDown) {
-        // Retract to safe Z at current position
-        points.push({ x: currentX, y: currentY, z: 0 });
-        penDown = false;
-      }
+    // Return formatted toolpath
+    return {
+      points: pathPoints,
+      depth,
+      bounds: bounds || this._calculatePathBoundsFromPoints(pathPoints)
     };
+  }
+  
+  /**
+   * Calculate bounds from points array
+   * @private
+   * @param {Array} points - Array of points
+   * @returns {Object} - Bounds object
+   */
+  _calculatePathBoundsFromPoints(points) {
+    let minX = Number.MAX_VALUE;
+    let minY = Number.MAX_VALUE;
+    let maxX = Number.MIN_VALUE;
+    let maxY = Number.MIN_VALUE;
     
-    const ensurePenDown = () => {
-      if (!penDown) {
-        // Plunge at current position
-        points.push({ x: currentX, y: currentY, z: -depth });
-        penDown = true;
-      }
+    if (points && points.length > 0) {
+      points.forEach(point => {
+        minX = Math.min(minX, point.x);
+        minY = Math.min(minY, point.y);
+        maxX = Math.max(maxX, point.x);
+        maxY = Math.max(maxY, point.y);
+      });
+    }
+    
+    // If no points or invalid bounds, return default
+    if (minX === Number.MAX_VALUE) {
+      return { minX: 0, minY: 0, maxX: 0, maxY: 0, width: 0, height: 0 };
+    }
+    
+    return {
+      minX,
+      minY,
+      maxX,
+      maxY,
+      width: maxX - minX,
+      height: maxY - minY
     };
-    
-    // Process each segment to generate toolpath points
-    segments.forEach((segment, index) => {
-      const { command, params } = segment;
-      
-      switch (command) {
-        case 'M': // Move To
-          // If this is the first point in the path
-          if (index === 0 || !lastCommand) {
-            ensurePenUp();
-            
-            currentX = params[0];
-            currentY = params[1];
-            firstX = currentX;
-            firstY = currentY;
-            
-            // Add starting point with safe Z
-            points.push({ x: currentX, y: currentY, z: 0 });
-            
-            // Add plunge point
-            points.push({ x: currentX, y: currentY, z: -depth });
-            penDown = true;
-          } else {
-            // For subsequent moves, add a safe Z move
-            ensurePenUp();
-            
-            // Move to new position
-            currentX = params[0];
-            currentY = params[1];
-            
-            // Safe Z at new position
-            points.push({ x: currentX, y: currentY, z: 0 });
-            
-            // Plunge at new position
-            points.push({ x: currentX, y: currentY, z: -depth });
-            penDown = true;
-          }
-          break;
-          
-        case 'L': // Line To
-          ensurePenDown();
-          currentX = params[0];
-          currentY = params[1];
-          points.push({ x: currentX, y: currentY, z: -depth });
-          break;
-          
-        case 'H': // Horizontal Line
-          ensurePenDown();
-          currentX = params[0];
-          points.push({ x: currentX, y: currentY, z: -depth });
-          break;
-          
-        case 'V': // Vertical Line
-          ensurePenDown();
-          currentY = params[0];
-          points.push({ x: currentX, y: currentY, z: -depth });
-          break;
-          
-        case 'Z': // Close Path
-          ensurePenDown();
-          // If we have a first point and the current point is different
-          if (firstX !== null && firstY !== null && 
-              (Math.abs(currentX - firstX) > 0.01 || Math.abs(currentY - firstY) > 0.01)) {
-            // Add a line back to the first point
-            points.push({ x: firstX, y: firstY, z: -depth });
-            currentX = firstX;
-            currentY = firstY;
-          }
-          break;
-          
-        case 'C': // Cubic Bezier
-          ensurePenDown();
-          
-          // For bezier curves, interpolate points along the curve
-          const steps = 10;  // Number of interpolation steps
-          const [x1, y1, x2, y2, x3, y3] = params;
-          
-          // Control points for the bezier
-          const p0 = { x: currentX, y: currentY };
-          const p1 = { x: x1, y: y1 };
-          const p2 = { x: x2, y: y2 };
-          const p3 = { x: x3, y: y3 };
-          
-          // Add interpolated points
-          for (let i = 1; i <= steps; i++) {
-            const t = i / steps;
-            
-            // Cubic bezier formula
-            const cx = (1-t)**3 * p0.x + 3 * (1-t)**2 * t * p1.x + 3 * (1-t) * t**2 * p2.x + t**3 * p3.x;
-            const cy = (1-t)**3 * p0.y + 3 * (1-t)**2 * t * p1.y + 3 * (1-t) * t**2 * p2.y + t**3 * p3.y;
-            
-            points.push({ x: cx, y: cy, z: -depth });
-          }
-          
-          // Update current position to the end of the curve
-          currentX = x3;
-          currentY = y3;
-          break;
-          
-        case 'S': // Smooth Cubic Bezier
-          ensurePenDown();
-          
-          // Reflect previous control point if it exists
-          let sx1, sy1;
-          if (lastCommand === 'C' || lastCommand === 'S') {
-            const prevSegment = segments[index - 1];
-            const prevParams = prevSegment.params;
-            const prevX = prevParams[prevParams.length - 4];
-            const prevY = prevParams[prevParams.length - 3];
-            const prevEndX = prevParams[prevParams.length - 2];
-            const prevEndY = prevParams[prevParams.length - 1];
-            
-            // Reflect control point
-            sx1 = 2 * prevEndX - prevX;
-            sy1 = 2 * prevEndY - prevY;
-          } else {
-            // If no previous control point, use current point
-            sx1 = currentX;
-            sy1 = currentY;
-          }
-          
-          // Rest of control points from params
-          const [sx2, sy2, sx3, sy3] = params;
-          
-          // Control points for the bezier
-          const s0 = { x: currentX, y: currentY };
-          const s1 = { x: sx1, y: sy1 };
-          const s2 = { x: sx2, y: sy2 };
-          const s3 = { x: sx3, y: sy3 };
-          
-          // Add interpolated points
-          for (let i = 1; i <= 10; i++) {
-            const t = i / 10;
-            
-            // Cubic bezier formula
-            const cx = (1-t)**3 * s0.x + 3 * (1-t)**2 * t * s1.x + 3 * (1-t) * t**2 * s2.x + t**3 * s3.x;
-            const cy = (1-t)**3 * s0.y + 3 * (1-t)**2 * t * s1.y + 3 * (1-t) * t**2 * s2.y + t**3 * s3.y;
-            
-            points.push({ x: cx, y: cy, z: -depth });
-          }
-          
-          // Update current position to the end of the curve
-          currentX = sx3;
-          currentY = sy3;
-          break;
-          
-        case 'Q': // Quadratic Bezier
-          ensurePenDown();
-          
-          // For quadratic bezier curves
-          const [qx1, qy1, qx2, qy2] = params;
-          
-          // Control points for the bezier
-          const q0 = { x: currentX, y: currentY };
-          const q1 = { x: qx1, y: qy1 };
-          const q2 = { x: qx2, y: qy2 };
-          
-          // Add interpolated points
-          for (let i = 1; i <= 8; i++) {
-            const t = i / 8;
-            
-            // Quadratic bezier formula
-            const cx = (1-t)**2 * q0.x + 2 * (1-t) * t * q1.x + t**2 * q2.x;
-            const cy = (1-t)**2 * q0.y + 2 * (1-t) * t * q1.y + t**2 * q2.y;
-            
-            points.push({ x: cx, y: cy, z: -depth });
-          }
-          
-          // Update current position to the end of the curve
-          currentX = qx2;
-          currentY = qy2;
-          break;
-        
-        // Add other curve handlers as needed...
-        
-        default:
-          console.log(`Unhandled path command: ${command}`);
-          break;
-      }
-      
-      lastCommand = command;
-    });
-    
-    // Add final retract if needed
-    ensurePenUp();
-    
-    return points;
   }
 
   /**
@@ -1671,6 +1803,403 @@ class SVGProcessor {
     
     // Sum all times and add 10% for acceleration/deceleration
     return (feedTime + plungeTime + rapidTime) * 1.1;
+  }
+
+  /**
+   * Convert path segments to toolpath points
+   * @private
+   * @param {Array} segments - Path segments
+   * @param {number} depth - Cutting depth
+   * @returns {Array} - Array of points with x, y, z coordinates and penUp flag
+   */
+  _segmentsToPoints(segments, depth) {
+    if (!segments || segments.length === 0) {
+      console.warn('No segments provided for path points generation');
+      return [];
+    }
+    
+    const points = [];
+    let currentX = 0;
+    let currentY = 0;
+    let firstX = null;
+    let firstY = null;
+    let lastCommand = null;
+    
+    // Process each segment to generate toolpath points
+    segments.forEach((segment, index) => {
+      const { command, params } = segment;
+      
+      try {
+        switch (command) {
+          case 'M': // Move To
+            // If this is the first point in the path
+            if (index === 0) {
+              currentX = params[0];
+              currentY = params[1];
+              firstX = currentX;
+              firstY = currentY;
+              
+              // Add starting point with safe Z (approach)
+              points.push({ x: currentX, y: currentY, z: 0, penUp: true });
+              
+              // Add plunge point
+              points.push({ x: currentX, y: currentY, z: -depth, penUp: false });
+            } else {
+              // For subsequent moves, add a safe Z move (pen up)
+              points.push({ x: currentX, y: currentY, z: 0, penUp: true });
+              
+              // Move to new position
+              currentX = params[0];
+              currentY = params[1];
+              
+              // Add approach point at new position
+              points.push({ x: currentX, y: currentY, z: 0, penUp: true });
+              
+              // Add plunge point at new position
+              points.push({ x: currentX, y: currentY, z: -depth, penUp: false });
+            }
+            break;
+            
+          case 'L': // Line To
+            // Support multiple line segments in one command
+            for (let i = 0; i < params.length; i += 2) {
+              if (i + 1 >= params.length) break;
+              currentX = params[i];
+              currentY = params[i + 1];
+              points.push({ x: currentX, y: currentY, z: -depth, penUp: false });
+            }
+            break;
+            
+          case 'H': // Horizontal Line
+            // Support multiple horizontal segments
+            for (let i = 0; i < params.length; i++) {
+              currentX = params[i];
+              points.push({ x: currentX, y: currentY, z: -depth, penUp: false });
+            }
+            break;
+            
+          case 'V': // Vertical Line
+            // Support multiple vertical segments
+            for (let i = 0; i < params.length; i++) {
+              currentY = params[i];
+              points.push({ x: currentX, y: currentY, z: -depth, penUp: false });
+            }
+            break;
+            
+          case 'Z': // Close Path
+            // If we have a first point and we're not already there
+            if (firstX !== null && firstY !== null && 
+                (Math.abs(currentX - firstX) > 0.01 || Math.abs(currentY - firstY) > 0.01)) {
+              // Add a line back to the first point
+              points.push({ x: firstX, y: firstY, z: -depth, penUp: false });
+              currentX = firstX;
+              currentY = firstY;
+            }
+            break;
+            
+          case 'C': // Cubic Bezier
+            this._addBezierCurvePoints(points, depth, 'cubic', 
+              currentX, currentY, 
+              params[0], params[1], // First control point
+              params[2], params[3], // Second control point
+              params[4], params[5]  // End point
+            );
+            
+            // Update current position to end point
+            currentX = params[4];
+            currentY = params[5];
+            break;
+            
+          case 'S': // Smooth Cubic Bezier
+            // Calculate first control point by reflecting previous control point
+            let sx1, sy1;
+            if (lastCommand === 'C' || lastCommand === 'S') {
+              const prevSegment = segments[index - 1];
+              const prevParams = prevSegment.params;
+              
+              // For C command, the previous control point is the 2nd control point
+              if (lastCommand === 'C') {
+                const prevX = prevParams[2]; // Second control point x
+                const prevY = prevParams[3]; // Second control point y
+                
+                // Reflect control point
+                sx1 = 2 * currentX - prevX;
+                sy1 = 2 * currentY - prevY;
+              } 
+              // For S command, the previous control point is already the 1st control point
+              else if (lastCommand === 'S') {
+                const prevX = prevParams[0]; // First control point x
+                const prevY = prevParams[1]; // First control point y
+                
+                // Reflect control point
+                sx1 = 2 * currentX - prevX;
+                sy1 = 2 * currentY - prevY;
+              }
+            } else {
+              // If no previous control point, use current point
+              sx1 = currentX;
+              sy1 = currentY;
+            }
+            
+            // Process curve with calculated first control point
+            this._addBezierCurvePoints(points, depth, 'cubic', 
+              currentX, currentY, 
+              sx1, sy1,               // First control point (calculated)
+              params[0], params[1],   // Second control point
+              params[2], params[3]    // End point
+            );
+            
+            // Update current position to end point
+            currentX = params[2];
+            currentY = params[3];
+            break;
+            
+          case 'Q': // Quadratic Bezier
+            this._addBezierCurvePoints(points, depth, 'quadratic', 
+              currentX, currentY, 
+              params[0], params[1], // Control point
+              null, null,           // Not used for quadratic
+              params[2], params[3]  // End point
+            );
+            
+            // Update current position to end point
+            currentX = params[2];
+            currentY = params[3];
+            break;
+            
+          case 'T': // Smooth Quadratic Bezier
+            // Calculate control point by reflecting previous control point
+            let tx1, ty1;
+            if (lastCommand === 'Q' || lastCommand === 'T') {
+              const prevSegment = segments[index - 1];
+              const prevParams = prevSegment.params;
+              
+              // For Q command, get the control point
+              if (lastCommand === 'Q') {
+                const prevX = prevParams[0]; // Control point x
+                const prevY = prevParams[1]; // Control point y
+                
+                // Reflect control point
+                tx1 = 2 * currentX - prevX;
+                ty1 = 2 * currentY - prevY;
+              } 
+              // For T command, the previous control point is already calculated the same way
+              else if (lastCommand === 'T') {
+                const prevX = prevParams[0]; // Calculated control point x
+                const prevY = prevParams[1]; // Calculated control point y
+                
+                // Reflect control point
+                tx1 = 2 * currentX - prevX;
+                ty1 = 2 * currentY - prevY;
+              }
+            } else {
+              // If no previous control point, use current point
+              tx1 = currentX;
+              ty1 = currentY;
+            }
+            
+            // Process curve with calculated control point
+            this._addBezierCurvePoints(points, depth, 'quadratic', 
+              currentX, currentY, 
+              tx1, ty1,           // Control point (calculated)
+              null, null,         // Not used for quadratic
+              params[0], params[1] // End point
+            );
+            
+            // Update current position to end point
+            currentX = params[0];
+            currentY = params[1];
+            break;
+            
+          case 'A': // Arc
+            // Arc command: rx, ry, x-axis-rotation, large-arc-flag, sweep-flag, x, y
+            this._addArcPoints(points, depth, 
+              currentX, currentY,           // Starting point
+              params[0], params[1],         // Radii
+              params[2],                     // X-axis rotation
+              params[3] === 1,               // Large arc flag
+              params[4] === 1,               // Sweep flag
+              params[5], params[6]           // End point
+            );
+            
+            // Update current position to end point
+            currentX = params[5];
+            currentY = params[6];
+            break;
+            
+          default:
+            console.warn(`Unhandled path command: ${command}`);
+            break;
+        }
+        
+        // Remember last command for smooth curves
+        lastCommand = command;
+      } catch (error) {
+        console.error(`Error processing segment ${index} with command ${command}:`, error);
+      }
+    });
+    
+    // Add final retract
+    if (points.length > 0) {
+      const lastPoint = points[points.length - 1];
+      points.push({ 
+        x: lastPoint.x, 
+        y: lastPoint.y, 
+        z: 0, 
+        penUp: true 
+      });
+    }
+    
+    return points;
+  }
+  
+  /**
+   * Add points for a Bezier curve
+   * @private
+   * @param {Array} points - Array to add points to
+   * @param {number} depth - Cutting depth
+   * @param {string} type - 'cubic' or 'quadratic'
+   * @param {number} startX - Start X
+   * @param {number} startY - Start Y
+   * @param {number} cp1x - Control point 1 X
+   * @param {number} cp1y - Control point 1 Y
+   * @param {number} cp2x - Control point 2 X (null for quadratic)
+   * @param {number} cp2y - Control point 2 Y (null for quadratic)
+   * @param {number} endX - End X
+   * @param {number} endY - End Y
+   */
+  _addBezierCurvePoints(points, depth, type, startX, startY, cp1x, cp1y, cp2x, cp2y, endX, endY) {
+    // Number of steps for interpolation (can be adjusted based on curve length/complexity)
+    const steps = type === 'cubic' ? 12 : 8;
+    
+    for (let i = 1; i <= steps; i++) {
+      const t = i / steps;
+      let x, y;
+      
+      if (type === 'cubic') {
+        // Cubic Bezier formula
+        x = Math.pow(1-t, 3) * startX + 
+            3 * Math.pow(1-t, 2) * t * cp1x + 
+            3 * (1-t) * Math.pow(t, 2) * cp2x + 
+            Math.pow(t, 3) * endX;
+            
+        y = Math.pow(1-t, 3) * startY + 
+            3 * Math.pow(1-t, 2) * t * cp1y + 
+            3 * (1-t) * Math.pow(t, 2) * cp2y + 
+            Math.pow(t, 3) * endY;
+      } else {
+        // Quadratic Bezier formula
+        x = Math.pow(1-t, 2) * startX + 
+            2 * (1-t) * t * cp1x + 
+            Math.pow(t, 2) * endX;
+            
+        y = Math.pow(1-t, 2) * startY + 
+            2 * (1-t) * t * cp1y + 
+            Math.pow(t, 2) * endY;
+      }
+      
+      points.push({ x, y, z: -depth, penUp: false });
+    }
+  }
+  
+  /**
+   * Add points for an arc
+   * @private
+   * @param {Array} points - Array to add points to
+   * @param {number} depth - Cutting depth
+   * @param {number} startX - Start X
+   * @param {number} startY - Start Y
+   * @param {number} rx - X radius
+   * @param {number} ry - Y radius
+   * @param {number} xAxisRotation - X axis rotation
+   * @param {boolean} largeArcFlag - Large arc flag
+   * @param {boolean} sweepFlag - Sweep flag
+   * @param {number} endX - End X
+   * @param {number} endY - End Y
+   */
+  _addArcPoints(points, depth, startX, startY, rx, ry, xAxisRotation, largeArcFlag, sweepFlag, endX, endY) {
+    // If radii are too small, treat as a line segment
+    if (rx < 0.01 || ry < 0.01) {
+      points.push({ x: endX, y: endY, z: -depth, penUp: false });
+      return;
+    }
+    
+    // Implementation for approximating an elliptical arc with line segments
+    // This is a simplified approach - a more accurate implementation would
+    // convert the arc to center parameterization and then generate points
+    
+    // Use a reasonable number of segments based on the arc size
+    const arcSize = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+    const segments = Math.max(8, Math.min(72, Math.ceil(arcSize / 5)));
+    
+    // Convert SVG arc representation to center parameterization
+    // Note: This is a simplified approximation
+    
+    // Ensure radii are positive
+    rx = Math.abs(rx);
+    ry = Math.abs(ry);
+    
+    // Rotation in radians
+    const theta = xAxisRotation * Math.PI / 180;
+    const cosTheta = Math.cos(theta);
+    const sinTheta = Math.sin(theta);
+    
+    // Adjusted current point and endpoint
+    const dx = (startX - endX) / 2;
+    const dy = (startY - endY) / 2;
+    
+    // Compute transformed point
+    const x1 = cosTheta * dx + sinTheta * dy;
+    const y1 = -sinTheta * dx + cosTheta * dy;
+    
+    // Ensure radii are large enough
+    const lambda = (x1 * x1) / (rx * rx) + (y1 * y1) / (ry * ry);
+    if (lambda > 1) {
+      rx = Math.sqrt(lambda) * rx;
+      ry = Math.sqrt(lambda) * ry;
+    }
+    
+    // Compute center parameters
+    const sign = largeArcFlag !== sweepFlag ? 1 : -1;
+    const sq = ((rx * rx * ry * ry) - (rx * rx * y1 * y1) - (ry * ry * x1 * x1)) / 
+               ((rx * rx * y1 * y1) + (ry * ry * x1 * x1));
+    const numerator = Math.max(0, sq); // Avoid negative sqrt
+    const coefficient = sign * Math.sqrt(numerator);
+    
+    const cx1 = coefficient * ((rx * y1) / ry);
+    const cy1 = coefficient * (-(ry * x1) / rx);
+    
+    // Compute center
+    const midX = (startX + endX) / 2;
+    const midY = (startY + endY) / 2;
+    
+    const cx = midX + cosTheta * cx1 - sinTheta * cy1;
+    const cy = midY + sinTheta * cx1 + cosTheta * cy1;
+    
+    // Compute angles
+    const startAngle = Math.atan2((y1 - cy1) / ry, (x1 - cx1) / rx);
+    const endAngle = Math.atan2((-y1 - cy1) / ry, (-x1 - cx1) / rx);
+    
+    let deltaAngle = endAngle - startAngle;
+    
+    // Adjust angle based on sweep and large-arc flags
+    if (!sweepFlag && deltaAngle > 0) {
+      deltaAngle -= 2 * Math.PI;
+    } else if (sweepFlag && deltaAngle < 0) {
+      deltaAngle += 2 * Math.PI;
+    }
+    
+    // Generate points along the arc
+    for (let i = 1; i <= segments; i++) {
+      const t = i / segments;
+      const angle = startAngle + t * deltaAngle;
+      
+      // Compute point on the ellipse
+      const ellipseX = cx + rx * Math.cos(angle) * cosTheta - ry * Math.sin(angle) * sinTheta;
+      const ellipseY = cy + rx * Math.cos(angle) * sinTheta + ry * Math.sin(angle) * cosTheta;
+      
+      points.push({ x: ellipseX, y: ellipseY, z: -depth, penUp: false });
+    }
   }
 }
 

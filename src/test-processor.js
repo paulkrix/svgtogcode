@@ -8,7 +8,7 @@ const path = require('path');
 const SVGProcessor = require('./svg-processor');
 
 // Load test.svg
-function runTest() {
+async function runTest() {
   console.log("=== SVG Processor Test ===");
   
   try {
@@ -56,7 +56,7 @@ function runTest() {
     
     // Generate toolpaths
     console.log("Generating toolpaths...");
-    const toolpathData = processor.getToolpathData(processedData, config);
+    const toolpathData = await processor.getToolpathData(processedData, config);
     
     // Save toolpath data for inspection
     const toolpathOutput = path.join(__dirname, '..', 'debug_output', 'test_toolpath_data.json');
@@ -98,4 +98,6 @@ function runTest() {
 }
 
 // Run the test
-runTest(); 
+runTest().catch(error => {
+  console.error("Unhandled error in runTest:", error);
+}); 
