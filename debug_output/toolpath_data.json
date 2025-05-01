@@ -302,7 +302,7 @@
           "z": -4.17
         },
         {
-          "x": 96.37688898167153,
+          "x": 96.37688898167154,
           "y": 105.00486732194224,
           "z": -4.17
         },
@@ -1076,7 +1076,7 @@
           "z": -2.48
         },
         {
-          "x": 127.01866670643065,
+          "x": 127.01866670643066,
           "y": 130.71637170940383,
           "z": -2.48
         },
@@ -1850,7 +1850,7 @@
           "z": -2.19
         },
         {
-          "x": 28.50933335321533,
+          "x": 28.509333353215332,
           "y": 30.35818585470191,
           "z": -2.19
         },
@@ -2624,7 +2624,7 @@
           "z": -2.19
         },
         {
-          "x": 28.50933335321533,
+          "x": 28.509333353215332,
           "y": 250.3581858547019,
           "z": -2.19
         },
@@ -3462,35 +3462,42 @@
     ]
   ],
   "config": {
-    "output": {
-      "precision": 3,
-      "includeHeader": true,
-      "includeFooter": true,
-      "gcodeFlavor": "grbl"
+    "machineType": "grbl",
+    "workArea": {
+      "width": 200,
+      "height": 200,
+      "depth": 20
     },
-    "tool": {
-      "diameter": 3,
-      "spindleSpeed": 12000
+    "toolSettings": {
+      "diameter": 3.175,
+      "stepover": 40,
+      "depthPerPass": 1,
+      "feedRate": 1000,
+      "plungeRate": 500,
+      "rapidRate": 3000
+    },
+    "gcodeSettings": {
+      "startGcode": "G90\nG21\nG0 Z5\nM3 S12000",
+      "endGcode": "G0 Z10\nM5\nM2",
+      "gcodeFilename": "output.gcode"
     },
     "grayscaleMapping": {
+      "enabled": true,
       "minDepth": 0.5,
       "maxDepth": 5,
       "invert": false
     },
     "machine": {
-      "safeHeight": 5,
+      "type": "grbl",
+      "units": "mm",
       "feedRates": {
         "default": 1000,
-        "plunge": 500,
-        "rapid": 3000
+        "rapid": 3000,
+        "plunge": 500
       },
-      "flavor": "grbl"
-    },
-    "toolpath": {
-      "resolution": 72,
-      "circleSegments": 72,
-      "optimize": true,
-      "constantZ": false
+      "workOffset": "G54",
+      "spindleSpeed": 12000,
+      "safeHeight": null
     }
   }
 }

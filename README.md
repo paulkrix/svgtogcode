@@ -53,6 +53,10 @@ src/
 └── utils/         # Utility functions
 ```
 
+### Codebase Improvements
+
+We maintain a list of planned improvements and refactoring tasks in the [Codebase Improvements](docs/codebase_improvements.md) document. Contributors are encouraged to pick tasks from this list when looking for ways to help with the project.
+
 ### Building
 
 ```
