@@ -28,6 +28,14 @@ contextBridge.exposeInMainWorld('api', {
   getGCodeVisualization: (gcodeData, toolpathData, config) =>
     ipcRenderer.invoke('get-gcode-visualization', gcodeData, toolpathData, config),
   
+  // Three.js visualization
+  generateThreeJsVisualization: (gcodeData) => 
+    ipcRenderer.invoke('generate-threejs-visualization', gcodeData),
+  openThreeJsVisualization: (htmlFilePath) => 
+    ipcRenderer.invoke('open-threejs-visualization', htmlFilePath),
+  openCurrentThreeJsVisualization: () => 
+    ipcRenderer.invoke('open-current-threejs-visualization'),
+  
   // Event listeners
   on: (channel, callback) => {
     // Whitelist channels for security

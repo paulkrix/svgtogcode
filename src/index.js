@@ -2,16 +2,19 @@
  * SVG to GCode Converter - Main Application Entry Point
  */
 
-const { app, BrowserWindow, ipcMain, Menu, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const UpdateManager = require('./update-manager');
 const SVGProcessor = require('./svg-processor');
+const ThreeJsGCodeVisualizer = require('./visualization/threejs-gcode-viewer');
 
 // Keep references to prevent garbage collection
 let mainWindow;
 let updateManager;
 let svgProcessor;
+let threeJsVisualizer;
+let currentGCodeData = null;
 
 /**
  * Create the main application window
@@ -40,6 +43,9 @@ function createWindow() {
   
   // Initialize SVG processor
   svgProcessor = new SVGProcessor();
+  
+  // Initialize Three.js visualizer
+  threeJsVisualizer = new ThreeJsGCodeVisualizer();
   
   // Initialize update manager
   updateManager = new UpdateManager(mainWindow);
@@ -228,208 +234,233 @@ ipcMain.on('install-update', () => {
   }
 });
 
-// Add handlers for configuration loading/saving
-ipcMain.handle('load-configuration', async () => {
-  try {
-    const configPath = path.join(app.getPath('userData'), 'config.json');
-    
-    // Check if config file exists
-    if (fs.existsSync(configPath)) {
-      const configData = fs.readFileSync(configPath, 'utf8');
-      return JSON.parse(configData);
-    } else {
-      // Return default configuration if file doesn't exist
-      return getDefaultConfiguration();
-    }
-  } catch (error) {
-    console.error('Error loading configuration:', error);
-    throw new Error('Failed to load configuration');
-  }
-});
-
-ipcMain.handle('save-configuration', async (event, config) => {
-  try {
-    const configPath = path.join(app.getPath('userData'), 'config.json');
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
-    return true;
-  } catch (error) {
-    console.error('Error saving configuration:', error);
-    throw new Error('Failed to save configuration');
-  }
-});
-
 /**
- * Get default configuration settings
+ * Setup IPC handlers for communication with renderer process
  */
-function getDefaultConfiguration() {
-  return {
-    // Default settings
-    machineType: 'grbl',
-    workArea: {
-      width: 200,
-      height: 200,
-      depth: 20
-    },
-    toolSettings: {
-      diameter: 3.175,
-      stepover: 40,
-      depthPerPass: 1,
-      feedRate: 1000,
-      plungeRate: 500,
-      rapidRate: 3000
-    },
-    gcodeSettings: {
-      startGcode: 'G90\nG21\nG0 Z5\nM3 S12000',
-      endGcode: 'G0 Z10\nM5\nM2',
-      gcodeFilename: 'output.gcode'
-    },
-    grayscaleMapping: {
-      enabled: true,
-      minDepth: 0.5,
-      maxDepth: 5,
-      invert: false
-    },
-    machine: {
-      type: 'grbl',
-      units: 'mm',
-      feedRates: {
-        default: 1000,
-        rapid: 3000,
-        plunge: 500
-      },
-      workOffset: 'G54',
-      spindleSpeed: 12000
+function setupIpcHandlers() {
+  // Dialog handlers
+  ipcMain.handle('show-open-dialog', async (event, options) => {
+    return dialog.showOpenDialog(mainWindow, options);
+  });
+  
+  ipcMain.handle('show-save-dialog', async (event, options) => {
+    return dialog.showSaveDialog(mainWindow, options);
+  });
+  
+  // File operation handlers
+  ipcMain.handle('load-svg-file', async (event, filePath) => {
+    try {
+      const content = fs.readFileSync(filePath, 'utf8');
+      return content;
+    } catch (error) {
+      console.error('Error loading SVG file:', error);
+      throw error;
     }
-  };
+  });
+  
+  ipcMain.handle('save-gcode-file', async (event, gcode, filePath) => {
+    try {
+      fs.writeFileSync(filePath, gcode, 'utf8');
+      return true;
+    } catch (error) {
+      console.error('Error saving GCode file:', error);
+      throw error;
+    }
+  });
+  
+  ipcMain.handle('save-debug-file', async (event, content, filePath) => {
+    try {
+      // Create debug_output directory if it doesn't exist
+      const outputDir = path.join(app.getPath('userData'), 'debug_output');
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+      }
+      
+      const fullPath = path.join(outputDir, filePath);
+      fs.writeFileSync(fullPath, content, 'utf8');
+      return fullPath;
+    } catch (error) {
+      console.error('Error saving debug file:', error);
+      throw error;
+    }
+  });
+  
+  // Configuration handlers
+  ipcMain.handle('load-configuration', async (event) => {
+    // Return default configuration
+    return getDefaultConfiguration();
+  });
+  
+  ipcMain.handle('save-configuration', async (event, config) => {
+    // TODO: Save configuration to file
+    return true;
+  });
+  
+  // Conversion handlers
+  ipcMain.handle('convert-svg-to-gcode', async (event, svgData, config) => {
+    try {
+      const progressCallback = (progress) => {
+        mainWindow.webContents.send('conversion-progress', progress);
+      };
+      
+      const gcode = await svgProcessor.convertSVGToGCode(svgData, config, progressCallback);
+      
+      const gcodeData = {
+        commands: gcode.split('\n'),
+        estimatedTime: svgProcessor.getEstimatedTime(),
+        metadata: svgProcessor.getMetadata()
+      };
+      
+      // Store the GCode data for visualization
+      currentGCodeData = gcodeData;
+      
+      mainWindow.webContents.send('conversion-complete');
+      return gcode;
+    } catch (error) {
+      console.error('Error converting SVG to GCode:', error);
+      mainWindow.webContents.send('error', error.message);
+      throw error;
+    }
+  });
+  
+  // Visualization handlers
+  ipcMain.handle('get-processed-data', async (event, svgData, config) => {
+    try {
+      return svgProcessor.getProcessedData(svgData, config);
+    } catch (error) {
+      console.error('Error getting processed data:', error);
+      throw error;
+    }
+  });
+  
+  ipcMain.handle('get-toolpath-data', async (event, svgData, config) => {
+    try {
+      return svgProcessor.getToolpathData(svgData, config);
+    } catch (error) {
+      console.error('Error getting toolpath data:', error);
+      throw error;
+    }
+  });
+  
+  ipcMain.handle('get-svg-visualization', async (event, processedData, svgData, config) => {
+    try {
+      return svgProcessor.getSVGVisualization(processedData, svgData, config);
+    } catch (error) {
+      console.error('Error getting SVG visualization:', error);
+      throw error;
+    }
+  });
+  
+  ipcMain.handle('get-toolpath-visualization', async (event, toolpathData, config) => {
+    try {
+      return svgProcessor.getToolpathVisualization(toolpathData, config);
+    } catch (error) {
+      console.error('Error getting toolpath visualization:', error);
+      throw error;
+    }
+  });
+  
+  ipcMain.handle('get-gcode-visualization', async (event, gcodeData, toolpathData, config) => {
+    try {
+      return svgProcessor.getGCodeVisualization(gcodeData, toolpathData, config);
+    } catch (error) {
+      console.error('Error getting GCode visualization:', error);
+      throw error;
+    }
+  });
+  
+  // New IPC handlers for Three.js visualization
+  ipcMain.handle('generate-threejs-visualization', async (event, gcodeData) => {
+    try {
+      const htmlFilePath = await generateThreeJsVisualization(gcodeData);
+      return htmlFilePath;
+    } catch (error) {
+      console.error('Error handling generate-threejs-visualization:', error);
+      throw error;
+    }
+  });
+  
+  ipcMain.handle('open-threejs-visualization', async (event, htmlFilePath) => {
+    try {
+      openThreeJsVisualization(htmlFilePath);
+      return true;
+    } catch (error) {
+      console.error('Error handling open-threejs-visualization:', error);
+      throw error;
+    }
+  });
+  
+  // Use current GCode data if available
+  ipcMain.handle('open-current-threejs-visualization', async (event) => {
+    try {
+      if (currentGCodeData) {
+        const htmlFilePath = await generateThreeJsVisualization(currentGCodeData);
+        openThreeJsVisualization(htmlFilePath);
+        return true;
+      } else {
+        throw new Error('No GCode data available');
+      }
+    } catch (error) {
+      console.error('Error handling open-current-threejs-visualization:', error);
+      throw error;
+    }
+  });
 }
 
-// Add IPC handlers for all methods exposed in preload.js
-ipcMain.handle('show-open-dialog', async (event, options) => {
-  return dialog.showOpenDialog(mainWindow, options);
-});
-
-ipcMain.handle('show-save-dialog', async (event, options) => {
-  return dialog.showSaveDialog(mainWindow, options);
-});
-
-ipcMain.handle('load-svg-file', async (event, filePath) => {
+/**
+ * Generate a Three.js visualization HTML page for the GCode
+ * @param {Object} gcodeData - GCode data (commands and metadata)
+ * @param {string} outputFilePath - Path to save the visualization
+ * @returns {Promise<string>} - The full path to the generated HTML file
+ */
+async function generateThreeJsVisualization(gcodeData, outputFilePath = null) {
   try {
-    const svgData = fs.readFileSync(filePath, 'utf8');
-    return svgData;
-  } catch (error) {
-    console.error('Error loading SVG file:', error);
-    throw new Error('Failed to load SVG file');
-  }
-});
-
-ipcMain.handle('save-gcode-file', async (event, gcode, filePath) => {
-  try {
-    fs.writeFileSync(filePath, gcode, 'utf8');
-    return true;
-  } catch (error) {
-    console.error('Error saving GCode file:', error);
-    throw new Error('Failed to save GCode file');
-  }
-});
-
-ipcMain.handle('save-debug-file', async (event, content, filePath) => {
-  try {
-    fs.writeFileSync(filePath, content, 'utf8');
-    return true;
-  } catch (error) {
-    console.error('Error saving debug file:', error);
-    throw new Error('Failed to save debug file');
-  }
-});
-
-ipcMain.handle('convert-svg-to-gcode', async (event, svgData, config) => {
-  try {
-    // This should be implemented in your SVGProcessor class
-    if (!svgProcessor) {
-      svgProcessor = new SVGProcessor();
+    // Set current GCode data for reference
+    currentGCodeData = gcodeData;
+    
+    // Generate the HTML content
+    const htmlContent = threeJsVisualizer.generateVisualizationPage(gcodeData);
+    
+    // If no output path specified, save to temporary file
+    if (!outputFilePath) {
+      // Create output directory if it doesn't exist
+      const outputDir = path.join(app.getPath('temp'), 'svg2gcode-visualizations');
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+      }
+      
+      // Create a filename based on current date/time
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      outputFilePath = path.join(outputDir, `gcode-visualization-${timestamp}.html`);
     }
     
-    // Send progress updates as conversion proceeds
-    const progressCallback = (progress) => {
-      mainWindow.webContents.send('conversion-progress', progress);
-    };
+    // Save the HTML file
+    fs.writeFileSync(outputFilePath, htmlContent, 'utf8');
     
-    const result = await svgProcessor.convertToGCode(svgData, config, progressCallback);
-    mainWindow.webContents.send('conversion-complete', result);
-    return result;
+    return outputFilePath;
   } catch (error) {
-    console.error('Error converting SVG to GCode:', error);
-    mainWindow.webContents.send('error', error.message || 'Failed to convert SVG to GCode');
+    console.error('Error generating Three.js visualization:', error);
     throw error;
   }
-});
+}
 
-ipcMain.handle('get-processed-data', async (event, svgData, config) => {
-  try {
-    if (!svgProcessor) {
-      svgProcessor = new SVGProcessor();
-    }
-    return await svgProcessor.getProcessedData(svgData, config);
-  } catch (error) {
-    console.error('Error processing SVG data:', error);
-    throw new Error('Failed to process SVG data');
-  }
-});
+/**
+ * Open a Three.js visualization in the default browser
+ * @param {string} htmlFilePath - Path to the HTML file
+ */
+function openThreeJsVisualization(htmlFilePath) {
+  // Open the HTML file in the default browser
+  shell.openExternal(`file://${htmlFilePath}`);
+}
 
-ipcMain.handle('get-toolpath-data', async (event, svgData, config) => {
-  try {
-    if (!svgProcessor) {
-      svgProcessor = new SVGProcessor();
-    }
-    return await svgProcessor.getToolpathData(svgData, config);
-  } catch (error) {
-    console.error('Error generating toolpath:', error);
-    throw new Error('Failed to generate toolpath');
-  }
-});
-
-ipcMain.handle('get-svg-visualization', async (event, processedData, svgData, config) => {
-  try {
-    if (!svgProcessor) {
-      svgProcessor = new SVGProcessor();
-    }
-    return await svgProcessor.getSVGVisualization(processedData, svgData, config);
-  } catch (error) {
-    console.error('Error creating SVG visualization:', error);
-    throw new Error('Failed to create SVG visualization');
-  }
-});
-
-ipcMain.handle('get-toolpath-visualization', async (event, toolpathData, config) => {
-  try {
-    if (!svgProcessor) {
-      svgProcessor = new SVGProcessor();
-    }
-    return await svgProcessor.getToolpathVisualization(toolpathData, config);
-  } catch (error) {
-    console.error('Error creating toolpath visualization:', error);
-    throw new Error('Failed to create toolpath visualization');
-  }
-});
-
-ipcMain.handle('get-gcode-visualization', async (event, gcodeData, toolpathData, config) => {
-  try {
-    if (!svgProcessor) {
-      svgProcessor = new SVGProcessor();
-    }
-    return await svgProcessor.getGCodeVisualization(gcodeData, toolpathData, config);
-  } catch (error) {
-    console.error('Error creating GCode visualization:', error);
-    throw new Error('Failed to create GCode visualization');
-  }
-});
-
-// This method will be called when Electron has finished initialization
+// Start the application
 app.whenReady().then(() => {
   createWindow();
   
+  // Register IPC handlers
+  setupIpcHandlers();
+  
   app.on('activate', function () {
-    // On macOS re-create a window when the dock icon is clicked
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });

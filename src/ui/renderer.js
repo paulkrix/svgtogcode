@@ -31,6 +31,7 @@ const svgPreview = document.getElementById('svgPreview');
 const visualizationDashboard = document.getElementById('visualizationDashboard');
 const toolpathVisualization = document.getElementById('toolpathVisualization');
 const gcode3DVisualization = document.getElementById('gcode3DVisualization');
+const openThreejsBtn = document.getElementById('openThreejsBtn');
 const debugPanel = document.getElementById('debugPanel');
 const fileInfo = document.getElementById('fileInfo');
 const progressFill = document.getElementById('progressFill');
@@ -143,6 +144,9 @@ function setupEventListeners() {
   settingsBtn.addEventListener('click', handleOpenSettings);
   convertBtn.addEventListener('click', handleConvertSVG);
   themeToggleBtn.addEventListener('click', toggleTheme);
+  
+  // Open Three.js visualization button
+  openThreejsBtn.addEventListener('click', handleOpenThreejsVisualization);
   
   // Settings modal handlers
   closeButton.addEventListener('click', closeModal);
@@ -679,14 +683,24 @@ function handleProgress(progress) {
 
 // Handle conversion complete
 function handleConversionComplete() {
-  console.log("Conversion complete, updating UI");
+  progressFill.style.width = '100%';
   statusText.textContent = 'Conversion complete';
   
-  // Make sure the progress bar is at 100%
-  progressFill.style.width = '100%';
+  // Disable convert button and enable save button
+  convertBtn.disabled = true;
+  saveGcodeBtn.disabled = false;
   
-  // Re-enable the convert button
-  convertBtn.disabled = false;
+  // Enable the Three.js visualization button
+  openThreejsBtn.disabled = false;
+  
+  // Show 3D visualization
+  visualizationDashboard.classList.remove('hidden');
+  
+  // Update metadata display
+  updateMetadata();
+  
+  // Initialize timeline
+  initializeTimeline();
 }
 
 // Handle errors
@@ -713,6 +727,38 @@ async function saveSettings() {
     await window.api.saveConfiguration(config);
     statusText.textContent = 'Settings saved';
     closeModal();
+  } catch (error) {
+    statusText.textContent = `Error: ${error.message}`;
+  }
+}
+
+// Handle opening Three.js visualization in external browser
+async function handleOpenThreejsVisualization() {
+  try {
+    // If we have current GCode data, generate a new visualization
+    if (currentGCode) {
+      const gcodeData = {
+        commands: currentGCode.split('\n'),
+        metadata: {
+          fileName: fileInfo.querySelector('.file-name').textContent,
+          estimatedTime: parseFloat(estimatedTime.textContent.match(/(\d+):(\d+)/)[0].split(':').reduce((acc, time) => (60 * acc) + +time)),
+          totalDistance: parseFloat(cuttingDistance.textContent.match(/[\d.]+/)[0])
+        }
+      };
+      
+      // Show loading indicator
+      statusText.textContent = 'Generating 3D visualization...';
+      
+      // Generate and open the visualization
+      await window.api.openCurrentThreeJsVisualization();
+      
+      statusText.textContent = 'Ready';
+    } else {
+      statusText.textContent = 'No GCode available to visualize';
+      setTimeout(() => {
+        statusText.textContent = 'Ready';
+      }, 3000);
+    }
   } catch (error) {
     statusText.textContent = `Error: ${error.message}`;
   }
