@@ -41,8 +41,10 @@ class ThreeJsGCodeVisualizer {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GCode 3D Visualization</title>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- Use Three.js from unpkg for better compatibility -->
+  <script src="https://unpkg.com/three@0.126.1/build/three.min.js"></script>
+  <!-- Use OrbitControls from unpkg for better compatibility -->
+  <script src="https://unpkg.com/three@0.126.1/examples/js/controls/OrbitControls.js"></script>
   <style>
     body {
       margin: 0;
