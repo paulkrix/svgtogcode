@@ -544,21 +544,30 @@ async function handleOpenThreejsVisualization() {
   try {
     // If we have current GCode data, generate a new visualization
     if (currentGCode) {
+      console.log("Creating GCode data for 3D visualization");
+      
       const gcodeData = {
         commands: Array.isArray(currentGCode.commands) 
           ? currentGCode.commands 
           : currentGCode.split('\n'),
         metadata: {
-          fileName: fileInfo.textContent.replace('File: ', '').split(' ')[0],
+          fileName: currentSVG ? currentSVG.filename : 'gcode-visualization',
           estimatedTime: currentGCode.estimatedTime || 0,
           totalDistance: parseFloat(cuttingDistance.textContent.match(/[\d.]+/)[0])
         }
       };
       
+      console.log("GCode data prepared:", {
+        commandCount: gcodeData.commands.length,
+        fileName: gcodeData.metadata.fileName,
+        estimatedTime: gcodeData.metadata.estimatedTime
+      });
+      
       // Show loading indicator
       statusText.textContent = 'Generating 3D visualization...';
       
       // Generate and open the visualization
+      console.log("Calling openCurrentThreeJsVisualization");
       await window.api.openCurrentThreeJsVisualization();
       
       statusText.textContent = 'Ready';
@@ -569,6 +578,7 @@ async function handleOpenThreejsVisualization() {
       }, 3000);
     }
   } catch (error) {
+    console.error('Error in handleOpenThreejsVisualization:', error);
     statusText.textContent = `Error: ${error.message}`;
   }
 }
