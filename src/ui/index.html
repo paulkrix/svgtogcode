@@ -85,22 +85,16 @@
         <div class="dashboard-header">
           <h2>Machining Visualization</h2>
           <div class="view-controls">
-            <button id="syncViewsBtn" class="btn-icon" title="Sync Views"><i class="fas fa-link"></i></button>
+            <button id="openThreejsBtn" class="btn-prominent" title="Open 3D Visualization"><i class="fas fa-cube"></i> Open Interactive 3D View</button>
             <div class="toggle-group">
-              <button id="viewModeToggle" class="btn-toggle active" data-mode="side-by-side">
-                <i class="fas fa-columns"></i> Side by Side
-              </button>
-              <button id="viewModeToggle2D" class="btn-toggle" data-mode="2d-only">
-                <i class="fas fa-square"></i> 2D Only
-              </button>
-              <button id="viewModeToggle3D" class="btn-toggle" data-mode="3d-only">
-                <i class="fas fa-cube"></i> 3D Only
+              <button id="viewModeToggle2D" class="btn-toggle active" data-mode="2d-only">
+                <i class="fas fa-square"></i> 2D View
               </button>
             </div>
           </div>
         </div>
         
-        <div class="dual-visualization">
+        <div class="visualization-container">
           <div class="visualization-panel" id="toolpathPanel">
             <div class="panel-header">
               <h3>2D Toolpath</h3>
@@ -112,46 +106,6 @@
             </div>
             <div id="toolpathVisualization" class="visualization-container">
               <div class="placeholder">Processing toolpath...</div>
-            </div>
-          </div>
-          
-          <div class="visualization-panel" id="gcodePanel">
-            <div class="panel-header">
-              <h3>3D Visualization</h3>
-              <div class="panel-actions">
-                <button class="btn-icon" id="openThreejsBtn" title="Open in 3D Viewer"><i class="fas fa-external-link-alt"></i> View in 3D</button>
-                <div class="view-selector">
-                  <button class="view-btn active" id="viewTop" title="Top View"><i class="fas fa-arrow-down"></i></button>
-                  <button class="view-btn" id="viewFront" title="Front View"><i class="fas fa-arrow-right"></i></button>
-                  <button class="view-btn" id="viewSide" title="Side View"><i class="fas fa-arrow-left"></i></button>
-                  <button class="view-btn" id="viewIsometric" title="Isometric View"><i class="fas fa-cube"></i></button>
-                </div>
-              </div>
-            </div>
-            <div id="gcode3DVisualization" class="visualization-container">
-              <div class="placeholder">Processing 3D view...</div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="timeline-container">
-          <div class="playback-controls">
-            <button id="playBtn" class="btn-icon"><i class="fas fa-play"></i></button>
-            <button id="pauseBtn" class="btn-icon" disabled><i class="fas fa-pause"></i></button>
-            <button id="stopBtn" class="btn-icon" disabled><i class="fas fa-stop"></i></button>
-            <select id="speedSelect" class="speed-selector">
-              <option value="0.5">0.5x</option>
-              <option value="1" selected>1x</option>
-              <option value="2">2x</option>
-              <option value="5">5x</option>
-            </select>
-          </div>
-          <div class="timeline">
-            <input type="range" id="timelineSlider" min="0" max="100" value="0">
-            <div class="timeline-labels">
-              <span>Start</span>
-              <span id="currentTimeDisplay">00:00</span>
-              <span id="totalTimeDisplay">00:00</span>
             </div>
           </div>
         </div>
@@ -195,12 +149,11 @@
         <h3>Debug Information</h3>
         <p>Debug files have been saved to the debug_output/ directory:</p>
         <ul>
-          <li>Original SVG: debug_output/original_svg.svg</li>
-          <li>GCode: debug_output/debug_gcode.nc</li>
-          <li>SVG Visualization: debug_output/svg_visualization.svg</li>
-          <li>Toolpath Visualization: debug_output/toolpath_visualization.svg</li>
-          <li>GCode Path Visualization: debug_output/gcode_visualization.svg</li>
-          <li>Toolpath Data: debug_output/toolpath_data.json</li>
+          <li>Original SVG: original_svg.svg</li>
+          <li>GCode: debug_gcode.nc</li>
+          <li>SVG Visualization: svg_visualization.svg</li>
+          <li>Toolpath Visualization: toolpath_visualization.svg</li>
+          <li>Toolpath Data: toolpath_data.json</li>
         </ul>
         <p>Use these files to compare between the input and output to identify issues.</p>
       </div>

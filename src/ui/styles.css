@@ -324,7 +324,8 @@ main {
 .view-controls {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .toggle-group {
@@ -380,7 +381,40 @@ main {
 
 .panel-actions {
   display: flex;
-  gap: 0.25rem;
+  align-items: center;
+}
+
+#openThreejsBtn {
+  margin-right: 10px;
+  background-color: #ff5722;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: background-color 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+#openThreejsBtn:hover {
+  background-color: #e64a19;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+}
+
+#openThreejsBtn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+#openThreejsBtn i {
+  margin-right: 5px;
 }
 
 .view-selector {
@@ -680,4 +714,38 @@ footer {
   .modal-content {
     width: 90%;
   }
+}
+
+.btn-prominent {
+  background-color: #ff5722;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  margin-right: 15px;
+}
+
+.btn-prominent:hover {
+  background-color: #e64a19;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.btn-prominent:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.btn-prominent i {
+  margin-right: 8px;
+  font-size: 16px;
 } 

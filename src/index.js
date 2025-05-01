@@ -303,12 +303,12 @@ function setupIpcHandlers() {
         mainWindow.webContents.send('conversion-progress', progress);
       };
       
-      const gcode = await svgProcessor.convertSVGToGCode(svgData, config, progressCallback);
+      const gcode = await svgProcessor.convertToGCode(svgData, config, progressCallback);
       
       const gcodeData = {
-        commands: gcode.split('\n'),
-        estimatedTime: svgProcessor.getEstimatedTime(),
-        metadata: svgProcessor.getMetadata()
+        commands: gcode.commands,
+        estimatedTime: gcode.estimatedTime,
+        metadata: gcode.metadata
       };
       
       // Store the GCode data for visualization
@@ -451,6 +451,52 @@ async function generateThreeJsVisualization(gcodeData, outputFilePath = null) {
 function openThreeJsVisualization(htmlFilePath) {
   // Open the HTML file in the default browser
   shell.openExternal(`file://${htmlFilePath}`);
+}
+
+/**
+ * Get default configuration settings
+ */
+function getDefaultConfiguration() {
+  return {
+    // Default settings
+    machineType: 'grbl',
+    workArea: {
+      width: 200,
+      height: 200,
+      depth: 20
+    },
+    toolSettings: {
+      diameter: 3.175,
+      stepover: 40,
+      depthPerPass: 1,
+      feedRate: 1000,
+      plungeRate: 500,
+      rapidRate: 3000
+    },
+    gcodeSettings: {
+      startGcode: 'G90\nG21\nG0 Z5\nM3 S12000',
+      endGcode: 'G0 Z10\nM5\nM2',
+      gcodeFilename: 'output.gcode'
+    },
+    grayscaleMapping: {
+      enabled: true,
+      minDepth: 0.5,
+      maxDepth: 5,
+      invert: false
+    },
+    machine: {
+      type: 'grbl',
+      units: 'mm',
+      feedRates: {
+        default: 1000,
+        rapid: 3000,
+        plunge: 500
+      },
+      workOffset: 'G54',
+      spindleSpeed: 12000,
+      safeHeight: 5
+    }
+  };
 }
 
 // Start the application

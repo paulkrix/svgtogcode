@@ -15,10 +15,6 @@ let currentGCode = null;
 let processedData = null;
 let toolpathData = null;
 let config = null;
-let isSimulating = false;
-let simulationTimer = null;
-let currentSimulationStep = 0;
-let simulationSpeed = 1;
 
 // DOM Elements - Main UI
 const loadSvgBtn = document.getElementById('loadSvgBtn');
@@ -30,7 +26,6 @@ const toggleDebugBtn = document.getElementById('toggleDebugBtn');
 const svgPreview = document.getElementById('svgPreview');
 const visualizationDashboard = document.getElementById('visualizationDashboard');
 const toolpathVisualization = document.getElementById('toolpathVisualization');
-const gcode3DVisualization = document.getElementById('gcode3DVisualization');
 const openThreejsBtn = document.getElementById('openThreejsBtn');
 const debugPanel = document.getElementById('debugPanel');
 const fileInfo = document.getElementById('fileInfo');
@@ -46,26 +41,10 @@ const saveSettingsBtn = document.getElementById('saveSettingsBtn');
 const cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
 
 // DOM Elements - View Controls
-const syncViewsBtn = document.getElementById('syncViewsBtn');
-const viewModeToggle = document.getElementById('viewModeToggle');
 const viewModeToggle2D = document.getElementById('viewModeToggle2D');
-const viewModeToggle3D = document.getElementById('viewModeToggle3D');
-const viewTop = document.getElementById('viewTop');
-const viewFront = document.getElementById('viewFront');
-const viewSide = document.getElementById('viewSide');
-const viewIsometric = document.getElementById('viewIsometric');
 const zoomInBtn2D = document.getElementById('zoomInBtn2D');
 const zoomOutBtn2D = document.getElementById('zoomOutBtn2D');
 const resetViewBtn2D = document.getElementById('resetViewBtn2D');
-
-// DOM Elements - Timeline and Playback
-const playBtn = document.getElementById('playBtn');
-const pauseBtn = document.getElementById('pauseBtn');
-const stopBtn = document.getElementById('stopBtn');
-const speedSelect = document.getElementById('speedSelect');
-const timelineSlider = document.getElementById('timelineSlider');
-const currentTimeDisplay = document.getElementById('currentTimeDisplay');
-const totalTimeDisplay = document.getElementById('totalTimeDisplay');
 
 // DOM Elements - Metadata
 const estimatedTime = document.getElementById('estimatedTime');
@@ -92,6 +71,9 @@ async function initApp() {
     
     // Update form values with config
     updateFormFromConfig();
+    
+    // Disable Three.js button by default (until GCode is generated)
+    openThreejsBtn.disabled = true;
     
     // Setup event listeners
     setupEventListeners();
@@ -154,30 +136,12 @@ function setupEventListeners() {
   cancelSettingsBtn.addEventListener('click', closeModal);
   
   // View mode toggles
-  viewModeToggle.addEventListener('click', () => setViewMode('side-by-side'));
   viewModeToggle2D.addEventListener('click', () => setViewMode('2d-only'));
-  viewModeToggle3D.addEventListener('click', () => setViewMode('3d-only'));
-  
-  // 3D view buttons
-  viewTop.addEventListener('click', () => set3DView('top'));
-  viewFront.addEventListener('click', () => set3DView('front'));
-  viewSide.addEventListener('click', () => set3DView('side'));
-  viewIsometric.addEventListener('click', () => set3DView('isometric'));
   
   // Zoom controls
   zoomInBtn2D.addEventListener('click', () => zoom2D('in'));
   zoomOutBtn2D.addEventListener('click', () => zoom2D('out'));
   resetViewBtn2D.addEventListener('click', resetView2D);
-  
-  // Playback controls
-  playBtn.addEventListener('click', startSimulation);
-  pauseBtn.addEventListener('click', pauseSimulation);
-  stopBtn.addEventListener('click', stopSimulation);
-  speedSelect.addEventListener('change', updateSimulationSpeed);
-  timelineSlider.addEventListener('input', handleTimelineChange);
-  
-  // Sync views button
-  syncViewsBtn.addEventListener('click', toggleSyncViews);
   
   // Tab handlers for settings modal
   tabButtons.forEach(button => {
@@ -206,61 +170,14 @@ function setupEventListeners() {
   });
 }
 
-// Set view mode (side-by-side, 2D only, 3D only)
+// Set view mode (2D only)
 function setViewMode(mode) {
-  // Reset all buttons
-  viewModeToggle.classList.remove('active');
-  viewModeToggle2D.classList.remove('active');
-  viewModeToggle3D.classList.remove('active');
+  // Make sure 2D button is active
+  viewModeToggle2D.classList.add('active');
   
+  // Ensure toolpath panel is displayed
   const toolpathPanel = document.getElementById('toolpathPanel');
-  const gcodePanel = document.getElementById('gcodePanel');
-  
-  switch (mode) {
-    case 'side-by-side':
-      viewModeToggle.classList.add('active');
-      toolpathPanel.style.display = 'flex';
-      gcodePanel.style.display = 'flex';
-      break;
-    case '2d-only':
-      viewModeToggle2D.classList.add('active');
-      toolpathPanel.style.display = 'flex';
-      gcodePanel.style.display = 'none';
-      break;
-    case '3d-only':
-      viewModeToggle3D.classList.add('active');
-      toolpathPanel.style.display = 'none';
-      gcodePanel.style.display = 'flex';
-      break;
-  }
-}
-
-// Set 3D view perspective
-function set3DView(view) {
-  // Reset all buttons
-  document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
-  
-  const svg = document.querySelector('#gcode3DVisualization svg');
-  if (!svg) return;
-  
-  switch (view) {
-    case 'top':
-      viewTop.classList.add('active');
-      svg.style.transform = 'rotateX(0deg) rotateY(0deg)';
-      break;
-    case 'front':
-      viewFront.classList.add('active');
-      svg.style.transform = 'rotateX(90deg) rotateY(0deg)';
-      break;
-    case 'side':
-      viewSide.classList.add('active');
-      svg.style.transform = 'rotateX(0deg) rotateY(90deg)';
-      break;
-    case 'isometric':
-      viewIsometric.classList.add('active');
-      svg.style.transform = 'rotateX(45deg) rotateY(45deg)';
-      break;
-  }
+  toolpathPanel.style.display = 'flex';
 }
 
 // Zoom controls for 2D view
@@ -298,93 +215,6 @@ function resetView2D() {
   if (svg) {
     svg.style.transform = 'scale(1)';
   }
-}
-
-// Toggle sync views
-function toggleSyncViews() {
-  const isActive = syncViewsBtn.classList.toggle('active');
-  
-  if (isActive) {
-    syncViewsBtn.style.backgroundColor = 'var(--primary-color)';
-    syncViewsBtn.style.color = 'white';
-  } else {
-    syncViewsBtn.style.backgroundColor = '';
-    syncViewsBtn.style.color = '';
-  }
-}
-
-// Timeline simulation controls
-function startSimulation() {
-  if (isSimulating) return;
-  
-  isSimulating = true;
-  playBtn.disabled = true;
-  pauseBtn.disabled = false;
-  stopBtn.disabled = false;
-  
-  simulationSpeed = parseFloat(speedSelect.value);
-  
-  simulationTimer = setInterval(() => {
-    currentSimulationStep += 1 * simulationSpeed;
-    
-    if (currentSimulationStep > 100) {
-      stopSimulation();
-      return;
-    }
-    
-    timelineSlider.value = currentSimulationStep;
-    updateTimeDisplay();
-    
-    // Here would be code to update the visualization based on timeline position
-  }, 100);
-}
-
-function pauseSimulation() {
-  if (!isSimulating) return;
-  
-  isSimulating = false;
-  clearInterval(simulationTimer);
-  
-  playBtn.disabled = false;
-  pauseBtn.disabled = true;
-}
-
-function stopSimulation() {
-  if (simulationTimer) {
-    clearInterval(simulationTimer);
-  }
-  
-  isSimulating = false;
-  currentSimulationStep = 0;
-  timelineSlider.value = 0;
-  updateTimeDisplay();
-  
-  playBtn.disabled = false;
-  pauseBtn.disabled = true;
-  stopBtn.disabled = true;
-  
-  // Reset visualization to initial state
-}
-
-function updateSimulationSpeed() {
-  simulationSpeed = parseFloat(speedSelect.value);
-}
-
-function handleTimelineChange() {
-  currentSimulationStep = parseInt(timelineSlider.value);
-  updateTimeDisplay();
-  
-  // Update visualization based on timeline position
-}
-
-function updateTimeDisplay() {
-  if (!currentGCode || !currentGCode.estimatedTime) return;
-  
-  const totalSeconds = currentGCode.estimatedTime;
-  const currentSeconds = (currentSimulationStep / 100) * totalSeconds;
-  
-  currentTimeDisplay.textContent = formatTime(currentSeconds);
-  totalTimeDisplay.textContent = formatTime(totalSeconds);
 }
 
 // Handle loading an SVG file
@@ -447,7 +277,7 @@ async function handleLoadSVG() {
     statusText.textContent = 'SVG loaded successfully';
     
     // Save original SVG for debugging
-    await window.api.saveDebugFile(currentSVG.rawData, 'debug_output/original_svg.svg');
+    await window.api.saveDebugFile(currentSVG.rawData, 'original_svg.svg');
     
   } catch (error) {
     console.error('Error loading SVG:', error);
@@ -463,13 +293,13 @@ async function handleSaveGCode() {
       return;
     }
     
-    const filePath = await window.api.showSaveDialog({
+    const result = await window.api.showSaveDialog({
       title: 'Save GCode File',
       filters: [{ name: 'GCode Files', extensions: ['nc', 'gcode'] }],
-      defaultPath: currentSVG.filename.replace('.svg', config.output.fileExtension)
+      defaultPath: currentSVG.filename.replace('.svg', '.nc')
     });
     
-    if (!filePath) {
+    if (result.canceled || !result.filePath) {
       statusText.textContent = 'File save canceled';
       return;
     }
@@ -483,7 +313,7 @@ async function handleSaveGCode() {
       ...currentGCode.footer
     ].join('\n');
     
-    await window.api.saveGCodeFile(gcodeText, filePath);
+    await window.api.saveGCodeFile(gcodeText, result.filePath);
     statusText.textContent = 'GCode saved successfully';
     
   } catch (error) {
@@ -511,7 +341,7 @@ async function handleConvertSVG() {
     console.log("Using config:", JSON.stringify(config, null, 2));
     
     // Convert SVG to GCode
-    console.log("Calling convertSVGToGCode with SVG data");
+    console.log("Calling convertToGCode with SVG data");
     currentGCode = await window.api.convertSVGToGCode(currentSVG.rawData, config);
     console.log("Received GCode result with", 
       currentGCode.commands ? currentGCode.commands.length : 0, "commands",
@@ -529,17 +359,15 @@ async function handleConvertSVG() {
     console.log("Generating visualizations...");
     const svgVisualization = await window.api.getSVGVisualization(processedData, currentSVG.rawData, config);
     const toolpathVisualizationHtml = await window.api.getToolpathVisualization(toolpathData, config);
-    const gcodeVisualization = await window.api.getGCodeVisualization(currentGCode, toolpathData, config);
     
     // Save visualizations to debug output
-    await saveVisualizationToFile(extractSvg(svgVisualization), 'debug_output/svg_visualization.svg');
-    await saveVisualizationToFile(extractSvg(toolpathVisualizationHtml), 'debug_output/toolpath_visualization.svg');
-    await saveVisualizationToFile(extractSvg(gcodeVisualization), 'debug_output/gcode_visualization.svg');
+    await saveVisualizationToFile(extractSvg(svgVisualization), 'svg_visualization.svg');
+    await saveVisualizationToFile(extractSvg(toolpathVisualizationHtml), 'toolpath_visualization.svg');
     
     // Save toolpath data for debugging
     await window.api.saveDebugFile(
       JSON.stringify(toolpathData, null, 2),
-      'debug_output/toolpath_data.json'
+      'toolpath_data.json'
     );
     
     // Save GCode for debugging
@@ -548,11 +376,10 @@ async function handleConvertSVG() {
       ...currentGCode.commands,
       ...currentGCode.footer
     ].join('\n');
-    await window.api.saveDebugFile(debugGCode, 'debug_output/debug_gcode.nc');
+    await window.api.saveDebugFile(debugGCode, 'debug_gcode.nc');
     
     // Update visualizations
     toolpathVisualization.innerHTML = toolpathVisualizationHtml;
-    gcode3DVisualization.innerHTML = gcodeVisualization;
     
     // Make visualization dashboard visible
     visualizationDashboard.classList.remove('hidden');
@@ -560,11 +387,11 @@ async function handleConvertSVG() {
     // Update metadata
     updateMetadata();
     
-    // Initialize timeline
-    initializeTimeline();
-    
     // Enable save button
     saveGcodeBtn.disabled = false;
+    
+    // Enable Three.js visualization button
+    openThreejsBtn.disabled = false;
     
     statusText.textContent = 'Conversion complete';
   } catch (error) {
@@ -636,23 +463,6 @@ function updateMetadata() {
     : `${(totalDistance / 1000).toFixed(2)} m`;
 }
 
-// Initialize timeline with estimated time
-function initializeTimeline() {
-  if (!currentGCode) return;
-  
-  const totalTime = currentGCode.estimatedTime || 0;
-  timelineSlider.value = 0;
-  currentSimulationStep = 0;
-  
-  currentTimeDisplay.textContent = '00:00';
-  totalTimeDisplay.textContent = formatTime(totalTime);
-  
-  // Reset controls
-  playBtn.disabled = false;
-  pauseBtn.disabled = true;
-  stopBtn.disabled = true;
-}
-
 // Update config from form
 function updateConfigFromForm() {
   config.grayscaleMapping.minDepth = parseFloat(minDepthInput.value);
@@ -698,9 +508,6 @@ function handleConversionComplete() {
   
   // Update metadata display
   updateMetadata();
-  
-  // Initialize timeline
-  initializeTimeline();
 }
 
 // Handle errors
@@ -738,10 +545,12 @@ async function handleOpenThreejsVisualization() {
     // If we have current GCode data, generate a new visualization
     if (currentGCode) {
       const gcodeData = {
-        commands: currentGCode.split('\n'),
+        commands: Array.isArray(currentGCode.commands) 
+          ? currentGCode.commands 
+          : currentGCode.split('\n'),
         metadata: {
-          fileName: fileInfo.querySelector('.file-name').textContent,
-          estimatedTime: parseFloat(estimatedTime.textContent.match(/(\d+):(\d+)/)[0].split(':').reduce((acc, time) => (60 * acc) + +time)),
+          fileName: fileInfo.textContent.replace('File: ', '').split(' ')[0],
+          estimatedTime: currentGCode.estimatedTime || 0,
           totalDistance: parseFloat(cuttingDistance.textContent.match(/[\d.]+/)[0])
         }
       };
