@@ -36,14 +36,9 @@ class GCodeVisualizer {
     // Generate SVG for the visualization
     const svg = this._generateSVG(toolpaths, bounds, minDepth, maxDepth);
     
+    // Create container with stats
     return `
       <div class="gcode-visualization">
-        <div class="visualization-controls">
-          <button id="viewTop" class="view-btn active">Top</button>
-          <button id="viewFront" class="view-btn">Front</button>
-          <button id="viewSide" class="view-btn">Side</button>
-          <button id="viewIso" class="view-btn">Isometric</button>
-        </div>
         <div class="visualization-container">
           ${svg}
         </div>
@@ -66,31 +61,6 @@ class GCodeVisualizer {
           </div>
         </div>
       </div>
-      <script>
-        // Add view controls functionality
-        document.querySelectorAll('.view-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            // Remove active class from all buttons
-            document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
-            // Add active class to clicked button
-            btn.classList.add('active');
-            
-            // Get the visualization container
-            const container = document.querySelector('.visualization-container svg');
-            
-            // Set the appropriate transform based on view
-            if (btn.id === 'viewTop') {
-              container.style.transform = 'rotateX(0deg) rotateY(0deg)';
-            } else if (btn.id === 'viewFront') {
-              container.style.transform = 'rotateX(90deg) rotateY(0deg)';
-            } else if (btn.id === 'viewSide') {
-              container.style.transform = 'rotateX(0deg) rotateY(90deg)';
-            } else if (btn.id === 'viewIso') {
-              container.style.transform = 'rotateX(45deg) rotateY(45deg)';
-            }
-          });
-        });
-      </script>
     `;
   }
 
@@ -225,7 +195,7 @@ class GCodeVisualizer {
     const padding = 20;
     const width = maxX - minX + padding * 2;
     const height = maxY - minY + padding * 2;
-    const depth = maxZ - minZ;
+    const depth = Math.abs(maxZ - minZ);
     
     // Adjust so that the visualization is centered
     const translateX = -(minX + maxX) / 2;
@@ -233,7 +203,7 @@ class GCodeVisualizer {
     
     // Create SVG with perspective view
     let svg = `
-      <svg width="100%" height="100%" viewBox="${-width/2} ${-height/2} ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="transform-origin: center; transform: rotateX(45deg) rotateY(45deg);">
+      <svg id="gcode-3d-view" width="100%" height="100%" viewBox="${-width/2} ${-height/2} ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="transform-origin: center; transform: rotateX(45deg) rotateY(45deg); transition: transform 0.5s ease-in-out;">
         <style>
           .toolpath { fill: none; stroke-linecap: round; stroke-linejoin: round; }
           .rapid { stroke-dasharray: 2 2; }
@@ -243,6 +213,10 @@ class GCodeVisualizer {
           .y-axis { stroke: #4caf50; }
           .z-axis { stroke: #2196f3; }
           .label { font-size: 8px; fill: #666; text-anchor: middle; }
+          .view-btn { background: #f0f0f0; border: 1px solid #ccc; padding: 5px 10px; margin: 0 5px 10px 0; cursor: pointer; border-radius: 3px; }
+          .view-btn.active { background: #2196f3; color: white; border-color: #0b7dda; }
+          .visualization-controls { margin-bottom: 10px; display: flex; justify-content: center; }
+          .depth-indicator { font-size: 8px; fill: #333; text-anchor: middle; }
         </style>
         <g transform="translate(${translateX}, ${translateY})">
     `;
@@ -253,37 +227,57 @@ class GCodeVisualizer {
     // Add coordinate axes
     svg += this._generateAxes(minX, minY, maxX, maxY);
     
-    // Draw all toolpaths
+    // Draw all toolpaths with z-depth visualization
     toolpaths.forEach(path => {
       if (path.points.length < 2) return;
       
       // Determine if this is a rapid move or cutting move
       const isRapid = path.rapid;
       
-      // Generate color based on depth if cutting, or use gray for rapid
-      let color = '#999';
-      let strokeWidth = 1;
-      
-      // For cutting moves, color by depth
-      if (!isRapid) {
-        // Get the deepest point (most negative Z) of this path
-        const deepestZ = Math.min(...path.points.map(p => p.z));
-        
-        // Normalize depth for coloring
-        const normalizedDepth = Math.min(1, Math.max(0, (deepestZ - minDepth) / (maxDepth - minDepth)));
-        color = this._getDepthColor(normalizedDepth);
-        strokeWidth = 1.5;
-      }
-      
-      // Create path data
-      let pathData = `M${path.points[0].x},${path.points[0].y}`;
-      
+      // For each segment, draw with z-depth coloring
       for (let i = 1; i < path.points.length; i++) {
-        pathData += ` L${path.points[i].x},${path.points[i].y}`;
+        const p1 = path.points[i - 1];
+        const p2 = path.points[i];
+        
+        // Skip if two points are identical
+        if (p1.x === p2.x && p1.y === p2.y && p1.z === p2.z) continue;
+        
+        // Generate color based on depth if cutting, or use gray for rapid
+        let color = '#999';
+        let strokeWidth = 1;
+        
+        // For cutting moves, color by depth
+        if (!isRapid) {
+          // Get the z value for this segment
+          const z = Math.min(p1.z, p2.z);
+          
+          // Normalize depth for coloring
+          const normalizedDepth = Math.min(1, Math.max(0, (z - minZ) / (maxZ - minZ)));
+          color = this._getDepthColor(normalizedDepth);
+          strokeWidth = 1.5;
+          
+          // Add z-depth line
+          if (p1.z !== 0 && p2.z !== 0) {
+            // Draw vertical line to show Z depth
+            svg += `<line x1="${p1.x}" y1="${p1.y}" x2="${p1.x}" y2="${p1.y}" z1="0" z2="${p1.z}" 
+                        stroke="${color}" stroke-width="0.5" opacity="0.3" />`;
+          }
+        }
+        
+        // Draw line segment with color based on depth
+        svg += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" 
+                    class="toolpath${isRapid ? ' rapid' : ''}" 
+                    stroke="${color}" 
+                    stroke-width="${strokeWidth}" />`;
       }
       
-      // Add the path to SVG
-      svg += `<path d="${pathData}" class="toolpath${isRapid ? ' rapid' : ''}" stroke="${color}" stroke-width="${strokeWidth}" />`;
+      // Add depth indicator for non-rapid moves
+      if (!isRapid && path.points.length > 0) {
+        const point = path.points[Math.floor(path.points.length / 2)]; // middle point
+        if (point.z < 0) {
+          svg += `<text x="${point.x}" y="${point.y}" class="depth-indicator" dy="-5">${point.z.toFixed(2)}mm</text>`;
+        }
+      }
     });
     
     // Add depth legend
@@ -295,7 +289,42 @@ class GCodeVisualizer {
       </svg>
     `;
     
-    return svg;
+    // Add buttons for different views
+    const viewControls = `
+      <div class="visualization-controls">
+        <button id="viewTop" class="view-btn active">Top View</button>
+        <button id="viewFront" class="view-btn">Front View</button>
+        <button id="viewSide" class="view-btn">Side View</button>
+        <button id="viewIsometric" class="view-btn">Isometric</button>
+      </div>
+      <script>
+        // Add view controls functionality
+        document.querySelectorAll('.view-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+            // Remove active class from all buttons
+            document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+            // Add active class to clicked button
+            this.classList.add('active');
+            
+            // Get the visualization SVG
+            const svg = document.getElementById('gcode-3d-view');
+            
+            // Apply the appropriate transform based on view type
+            if (this.id === 'viewTop') {
+              svg.style.transform = 'rotateX(0deg) rotateY(0deg)';
+            } else if (this.id === 'viewFront') {
+              svg.style.transform = 'rotateX(90deg) rotateY(0deg)';
+            } else if (this.id === 'viewSide') {
+              svg.style.transform = 'rotateX(0deg) rotateY(90deg)';
+            } else if (this.id === 'viewIsometric') {
+              svg.style.transform = 'rotateX(45deg) rotateY(45deg)';
+            }
+          });
+        });
+      </script>
+    `;
+    
+    return viewControls + svg;
   }
   
   /**

@@ -335,18 +335,20 @@ footer {
 }
 
 .visualization-container {
-  flex: 1;
-  border: 1px solid #eee;
-  border-radius: 4px;
-  overflow: hidden;
   position: relative;
-  min-height: 200px;
+  height: 400px; /* Fixed height for consistent visualization */
+  overflow: hidden;
+  margin-bottom: 10px;
+  perspective: 1000px;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 4px;
 }
 
 .visualization-container svg {
   width: 100%;
   height: 100%;
-  transition: transform 0.3s ease;
+  transform-style: preserve-3d;
 }
 
 .visualization-info {

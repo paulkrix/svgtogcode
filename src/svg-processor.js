@@ -1489,7 +1489,7 @@ class SVGProcessor {
    * @returns {string} - SVG visualization of GCode
    */
   getGCodeVisualization(gcode, toolpathData, config) {
-    console.log("Generating toolpath visualization...");
+    console.log("Generating GCode 3D visualization...");
     
     // If gcode is a string, parse it to extract commands
     let gcodeLines = [];
@@ -1507,8 +1507,30 @@ class SVGProcessor {
       return "<svg width='300' height='200'><text x='10' y='100' fill='red'>Invalid GCode format</text></svg>";
     }
     
-    // Reuse the toolpath visualization since the GCode follows the same paths
-    return this.getToolpathVisualization(toolpathData, config);
+    // Use the GCodeVisualizer to create a 3D visualization
+    try {
+      // Create GCode visualizer instance
+      const GCodeVisualizer = require('./visualization/gcode-visualizer');
+      const visualizer = new GCodeVisualizer(config);
+      
+      // Create visualization data object with necessary fields
+      const gcodeData = {
+        commands: gcodeLines,
+        metadata: {
+          minDepth: config.grayscaleMapping.minDepth,
+          maxDepth: config.grayscaleMapping.maxDepth
+        },
+        estimatedTime: this._calculateEstimatedTime(toolpathData, config)
+      };
+      
+      // Generate the visualization
+      return visualizer.generateGCodePreview(gcodeData, toolpathData);
+    } catch (error) {
+      console.error("Error generating 3D GCode visualization:", error);
+      return `<svg width='300' height='200'>
+        <text x='10' y='100' fill='red'>Error generating 3D visualization: ${error.message}</text>
+      </svg>`;
+    }
   }
 
   /**
