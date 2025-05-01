@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SVG to GCode Converter Project - SVG to GCode Converter</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: 'default',
+        securityLevel: 'loose',
+        flowchart: { 
+          useMaxWidth: true,
+          htmlLabels: true
+        }
+      });
+
+      // Add active class to current page link
+      const currentPage = window.location.pathname.split('/').pop();
+      const navLinks = document.querySelectorAll('.nav-links a');
+      navLinks.forEach(link => {
+        const linkHref = link.getAttribute('href');
+        if (linkHref === currentPage || (currentPage === 'index.html' && linkHref === 'README.html')) {
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+  
+  <div class="mobile-nav">
+    <a href="index.html">Home</a>
+    <a href="installation_guide.html">Installation</a>
+    <a href="user_guide.html">User Guide</a>
+    <a href="developer_guide.html">For Developers</a>
+  </div>
+  
+  
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>SVG to GCode Converter</h2>
+      <p>Documentation</p>
+    </div>
+  
+    <div class="nav-section">
+      <div class="nav-section-title">Getting Started</div>
+      <ul class="nav-links">
+    <li><a href="README.html">Documentation Overview</a></li><li><a href="project_description.html" class="active">Project Overview</a></li><li><a href="installation_guide.html">Installation Guide</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">User Documentation</div>
+      <ul class="nav-links">
+    <li><a href="user_guide.html">User Guide</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">Technical Documentation</div>
+      <ul class="nav-links">
+    <li><a href="architecture_design.html">Architecture Design</a></li><li><a href="technical_specification.html">Technical Specification</a></li><li><a href="technology_stack.html">Technology Stack</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">Developer Documentation</div>
+      <ul class="nav-links">
+    <li><a href="developer_guide.html">Developer Guide</a></li><li><a href="implementation_steps.html">Implementation Steps</a></li><li><a href="codebase_improvements.html">Codebase Improvements</a></li><li><a href="assessment_checklists.html">Assessment Checklists</a></li>
+      </ul>
+    </div>
+    </div>
+  <div class="main-content">
+    <h1 id="svg-to-gcode-converter-project">SVG to GCode Converter Project</h1>
+<h2 id="project-overview">Project Overview</h2>
+<p>The SVG to GCode Converter is a specialized software tool designed to transform vector graphics (SVG files) into machine-readable GCode instructions for CNC machines. The unique feature of this converter is its ability to interpret grayscale color values within the SVG as depth (Z-axis) information in the resulting GCode, enabling the creation of three-dimensional engravings and carvings from two-dimensional vector files.</p>
+<p>This open-source project targets hobbyist makers who use custom-built milling machines with GRBL controllers, providing them with an accessible tool to expand their creative capabilities.</p>
+<h2 id="core-functionality">Core Functionality</h2>
+<p>The software bridges the gap between graphic design tools and CNC machining by:</p>
+<ol>
+<li>Parsing and interpreting SVG vector files</li>
+<li>Converting vector paths to machine toolpaths</li>
+<li>Translating grayscale color values to depth values</li>
+<li>Generating optimized GCode for various CNC controllers</li>
+<li>Providing a preview of the resulting toolpaths</li>
+</ol>
+<h2 id="key-features">Key Features</h2>
+<h3 id="svg-import-and-processing">SVG Import and Processing</h3>
+<ul>
+<li>Support for standard SVG file format</li>
+<li>Interpretation of vector paths, shapes, and lines</li>
+<li>Handling of complex path operations</li>
+<li>Conversion of filled areas to appropriate toolpaths</li>
+</ul>
+<h3 id="grayscale-to-depth-mapping">Grayscale-to-Depth Mapping</h3>
+<ul>
+<li>Interpretation of grayscale values (0-255) as depth levels</li>
+<li>Configurable mapping between color values and physical depth</li>
+<li>Support for both linear and custom mapping curves</li>
+<li>Ability to invert depth values when needed</li>
+</ul>
+<h3 id="gcode-generation">GCode Generation</h3>
+<ul>
+<li>Production of clean, optimized GCode</li>
+<li>Configurable settings for feed rates, plunge rates, and tool parameters</li>
+<li>Support for multiple CNC controller dialects</li>
+<li>Tool path optimization for efficiency</li>
+<li>Safety features like controlled entry/exit movements</li>
+</ul>
+<h3 id="grbl-compatibility">GRBL Compatibility</h3>
+<ul>
+<li>Optimized output for GRBL controller systems</li>
+<li>Support for GRBL-specific commands and parameters</li>
+<li>Compatible with common hobbyist milling machine configurations</li>
+<li>Consideration for typical hobbyist tooling and materials</li>
+</ul>
+<h3 id="user-interface">User Interface</h3>
+<ul>
+<li>Intuitive visualization of the conversion process</li>
+<li>Real-time preview of the resulting toolpaths</li>
+<li>Interactive depth map visualization</li>
+<li>Easy adjustment of conversion parameters</li>
+<li>Offline operation with no internet connectivity required</li>
+<li>Lightweight design suitable for typical hobbyist computer systems</li>
+</ul>
+<h2 id="technical-requirements">Technical Requirements</h2>
+<h3 id="input">Input</h3>
+<ul>
+<li>SVG files with grayscale elements</li>
+<li>Parameter settings for the conversion process</li>
+<li>Machine-specific configuration</li>
+</ul>
+<h3 id="output">Output</h3>
+<ul>
+<li>GRBL-compatible GCode files</li>
+<li>Preview images/renders of the expected result</li>
+<li>Toolpath statistics and estimated machining time</li>
+</ul>
+<h3 id="processing">Processing</h3>
+<ul>
+<li>Efficient path optimization algorithms</li>
+<li>Accurate grayscale-to-depth mapping</li>
+<li>Support for different tooling strategies</li>
+<li>Completely offline operation with no cloud dependencies</li>
+<li>Resource-efficient design for standard personal computers</li>
+</ul>
+<h2 id="use-cases">Use Cases</h2>
+<h3 id="hobbyist-milling-projects">Hobbyist Milling Projects</h3>
+<p>Create custom parts and designs for home workshop projects, with precise depth control for functional and decorative elements.</p>
+<h3 id="dimensional-art">Dimensional Art</h3>
+<p>Create relief carvings and engravings from 2D vector art, where darker areas are carved deeper and lighter areas remain higher.</p>
+<h3 id="pcb-milling">PCB Milling</h3>
+<p>Generate GCode for PCB isolation routing where trace depth can be controlled by grayscale values in the design.</p>
+<h3 id="custom-signage">Custom Signage</h3>
+<p>Produce dimensional signs where text and graphics have varying depths based on their grayscale values in the original design.</p>
+<h3 id="relief-maps">Relief Maps</h3>
+<p>Convert topographical data represented as grayscale images into 3D-carved relief maps.</p>
+<h2 id="technical-approach">Technical Approach</h2>
+<p>The software will employ a multi-stage processing pipeline, detailed further in the <a href="architecture_design.md">Architecture Design</a>:</p>
+<ol>
+<li><strong>SVG Parsing</strong>: Using a robust SVG parsing library to extract all vector data</li>
+<li><strong>Path Analysis</strong>: Converting complex paths to simpler segments and analyzing their properties</li>
+<li><strong>Grayscale Evaluation</strong>: Determining depth values based on grayscale color data (See <a href="technical_specification.md#1-grayscale-to-depth-mapping-algorithm">Grayscale Mapping in Technical Specification</a>)</li>
+<li><strong>Toolpath Generation</strong>: Creating optimized toolpaths considering machine constraints (See <a href="technical_specification.md#4-toolpath-generation-algorithm">Toolpath Generation in Technical Specification</a>)</li>
+<li><strong>GCode Formatting</strong>: Producing machine-specific GCode with appropriate commands and parameters (See <a href="technical_specification.md#5-grbl-specific-gcode-generation">GCode Generation in Technical Specification</a>)</li>
+</ol>
+<h2 id="open-source-philosophy">Open Source Philosophy</h2>
+<p>This project embraces open-source principles to:</p>
+<ul>
+<li>Encourage community contributions and improvements</li>
+<li>Allow users to customize the software for their specific needs</li>
+<li>Provide educational value for those learning CNC programming</li>
+<li>Ensure longevity through community maintenance</li>
+<li>Support the maker and hobbyist community with accessible tools</li>
+</ul>
+<h2 id="future-extensions">Future Extensions</h2>
+<ul>
+<li>Support for color-to-tool mapping for multi-tool operations</li>
+<li>3D preview capabilities</li>
+<li>Integration with common CAD/CAM software</li>
+<li>Tool library for material-specific settings</li>
+<li>Batch processing capabilities</li>
+<li>Community plugin system for extended functionality</li>
+<li>Profile system for different GRBL-based machines</li>
+<li>User-contributed toolpath strategies sharing</li>
+</ul>
+<h2 id="project-goals">Project Goals</h2>
+<ol>
+<li>Create an intuitive, reliable tool for converting SVG files to GCode specifically for hobbyist GRBL-controlled milling machines</li>
+<li>Provide precise control over depth through grayscale mapping</li>
+<li>Ensure complete offline functionality for workshop environments</li>
+<li>Develop a sustainable open-source project that can grow with community involvement</li>
+<li>Keep the interface and workflow accessible to non-technical users</li>
+<li>Optimize machining efficiency through intelligent toolpath generation specifically tuned for hobbyist-grade equipment</li>
+</ol>
+
+  </div>
+</body>
+</html>

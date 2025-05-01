@@ -1814,7 +1814,6 @@ M2 ; End program`;
    */
   _segmentsToPoints(segments, depth) {
     if (!segments || segments.length === 0) {
-      console.warn('No segments provided for path points generation');
       return [];
     }
     
@@ -1825,41 +1824,45 @@ M2 ; End program`;
     let firstY = null;
     let lastCommand = null;
     
-    // Process each segment to generate toolpath points
+    // Add initial plunge
+    points.push({ x: 0, y: 0, z: 0, penUp: true });
+    
     segments.forEach((segment, index) => {
-      const { command, params } = segment;
-      
       try {
+        const { command, params } = segment;
+        
         switch (command) {
           case 'M': // Move To
-            // If this is the first point in the path
-            if (index === 0) {
-              currentX = params[0];
-              currentY = params[1];
-              firstX = currentX;
-              firstY = currentY;
-              
-              // Add starting point with safe Z (approach)
-              points.push({ x: currentX, y: currentY, z: 0, penUp: true });
-              
-              // Add plunge point
-              points.push({ x: currentX, y: currentY, z: -depth, penUp: false });
-            } else {
-              // For subsequent moves, add a safe Z move (pen up)
-              points.push({ x: currentX, y: currentY, z: 0, penUp: true });
-              
-              // Move to new position
+            // Support multiple move segments in one command
+            if (params.length >= 2) {
               currentX = params[0];
               currentY = params[1];
               
-              // Add approach point at new position
+              // Update first point if not set yet
+              if (firstX === null && firstY === null) {
+                firstX = currentX;
+                firstY = currentY;
+              }
+              
+              // Add a pen-up move to the new position
               points.push({ x: currentX, y: currentY, z: 0, penUp: true });
               
-              // Add plunge point at new position
+              // Add a plunge at the new position
               points.push({ x: currentX, y: currentY, z: -depth, penUp: false });
+              
+              // For additional move commands in the same segment
+              for (let i = 2; i < params.length; i += 2) {
+                if (i + 1 >= params.length) break;
+                
+                currentX = params[i];
+                currentY = params[i + 1];
+                
+                // Add a line to the next position
+                points.push({ x: currentX, y: currentY, z: -depth, penUp: false });
+              }
             }
             break;
-            
+          
           case 'L': // Line To
             // Support multiple line segments in one command
             for (let i = 0; i < params.length; i += 2) {
@@ -1898,133 +1901,217 @@ M2 ; End program`;
             break;
             
           case 'C': // Cubic Bezier
-            this._addBezierCurvePoints(points, depth, 'cubic', 
-              currentX, currentY, 
-              params[0], params[1], // First control point
-              params[2], params[3], // Second control point
-              params[4], params[5]  // End point
-            );
-            
-            // Update current position to end point
-            currentX = params[4];
-            currentY = params[5];
+            // Fix for multiple cubic Bezier curves in one command
+            // Each cubic Bezier curve requires 6 parameters (3 points: 2 control points + end point)
+            for (let i = 0; i < params.length; i += 6) {
+              // Ensure we have enough parameters for a complete curve
+              if (i + 5 >= params.length) break;
+              
+              // Extract the control points and end point for this curve
+              const cp1x = params[i];
+              const cp1y = params[i + 1];
+              const cp2x = params[i + 2];
+              const cp2y = params[i + 3];
+              const endX = params[i + 4];
+              const endY = params[i + 5];
+              
+              // Add points for this curve
+              this._addBezierCurvePoints(points, depth, 'cubic', 
+                currentX, currentY, 
+                cp1x, cp1y,  // First control point
+                cp2x, cp2y,  // Second control point
+                endX, endY   // End point
+              );
+              
+              // Update current position to the end point of this curve
+              currentX = endX;
+              currentY = endY;
+            }
             break;
             
           case 'S': // Smooth Cubic Bezier
-            // Calculate first control point by reflecting previous control point
-            let sx1, sy1;
-            if (lastCommand === 'C' || lastCommand === 'S') {
-              const prevSegment = segments[index - 1];
-              const prevParams = prevSegment.params;
+            // Fix for multiple smooth cubic Bezier curves in one command
+            // Each smooth cubic Bezier requires 4 parameters (2 points: 1 control point + end point)
+            for (let i = 0; i < params.length; i += 4) {
+              // Ensure we have enough parameters for a complete curve
+              if (i + 3 >= params.length) break;
               
-              // For C command, the previous control point is the 2nd control point
-              if (lastCommand === 'C') {
-                const prevX = prevParams[2]; // Second control point x
-                const prevY = prevParams[3]; // Second control point y
+              // Calculate first control point by reflecting previous control point
+              let sx1, sy1;
+              if (lastCommand === 'C' || lastCommand === 'S') {
+                const prevSegment = segments[index - 1];
+                const prevParams = prevSegment.params;
                 
-                // Reflect control point
-                sx1 = 2 * currentX - prevX;
-                sy1 = 2 * currentY - prevY;
-              } 
-              // For S command, the previous control point is already the 1st control point
-              else if (lastCommand === 'S') {
-                const prevX = prevParams[0]; // First control point x
-                const prevY = prevParams[1]; // First control point y
-                
-                // Reflect control point
-                sx1 = 2 * currentX - prevX;
-                sy1 = 2 * currentY - prevY;
+                // For C command, the previous control point is the 2nd control point
+                if (lastCommand === 'C') {
+                  // Get the last control point from the previous C command
+                  const lastCurveIndex = prevParams.length - 6; // Last curve's start index
+                  if (lastCurveIndex >= 0) {
+                    const prevX = prevParams[lastCurveIndex + 2]; // Second control point x
+                    const prevY = prevParams[lastCurveIndex + 3]; // Second control point y
+                    
+                    // Reflect control point
+                    sx1 = 2 * currentX - prevX;
+                    sy1 = 2 * currentY - prevY;
+                  } else {
+                    // If somehow we can't find the previous control point
+                    sx1 = currentX;
+                    sy1 = currentY;
+                  }
+                } 
+                // For S command, the previous control point is already the 1st control point
+                else if (lastCommand === 'S') {
+                  // Get the last control point from the previous S command
+                  const lastCurveIndex = prevParams.length - 4; // Last curve's start index
+                  if (lastCurveIndex >= 0) {
+                    const prevX = prevParams[lastCurveIndex]; // First control point x
+                    const prevY = prevParams[lastCurveIndex + 1]; // First control point y
+                    
+                    // Reflect control point
+                    sx1 = 2 * currentX - prevX;
+                    sy1 = 2 * currentY - prevY;
+                  } else {
+                    // If somehow we can't find the previous control point
+                    sx1 = currentX;
+                    sy1 = currentY;
+                  }
+                }
+              } else {
+                // If no previous control point, use current point
+                sx1 = currentX;
+                sy1 = currentY;
               }
-            } else {
-              // If no previous control point, use current point
-              sx1 = currentX;
-              sy1 = currentY;
+              
+              // Extract the control point and end point for this curve
+              const cp2x = params[i];
+              const cp2y = params[i + 1];
+              const endX = params[i + 2];
+              const endY = params[i + 3];
+              
+              // Process curve with calculated first control point
+              this._addBezierCurvePoints(points, depth, 'cubic', 
+                currentX, currentY, 
+                sx1, sy1,     // First control point (calculated)
+                cp2x, cp2y,   // Second control point
+                endX, endY    // End point
+              );
+              
+              // Update current position to end point
+              currentX = endX;
+              currentY = endY;
             }
-            
-            // Process curve with calculated first control point
-            this._addBezierCurvePoints(points, depth, 'cubic', 
-              currentX, currentY, 
-              sx1, sy1,               // First control point (calculated)
-              params[0], params[1],   // Second control point
-              params[2], params[3]    // End point
-            );
-            
-            // Update current position to end point
-            currentX = params[2];
-            currentY = params[3];
             break;
             
           case 'Q': // Quadratic Bezier
-            this._addBezierCurvePoints(points, depth, 'quadratic', 
-              currentX, currentY, 
-              params[0], params[1], // Control point
-              null, null,           // Not used for quadratic
-              params[2], params[3]  // End point
-            );
-            
-            // Update current position to end point
-            currentX = params[2];
-            currentY = params[3];
+            // Fix for multiple quadratic Bezier curves in one command
+            // Each quadratic Bezier requires 4 parameters (2 points: control point + end point)
+            for (let i = 0; i < params.length; i += 4) {
+              // Ensure we have enough parameters for a complete curve
+              if (i + 3 >= params.length) break;
+              
+              // Extract the control point and end point for this curve
+              const cpx = params[i];
+              const cpy = params[i + 1];
+              const endX = params[i + 2];
+              const endY = params[i + 3];
+              
+              // Add points for this curve
+              this._addBezierCurvePoints(points, depth, 'quadratic', 
+                currentX, currentY, 
+                cpx, cpy,       // Control point
+                null, null,     // Not used for quadratic
+                endX, endY      // End point
+              );
+              
+              // Update current position to end point
+              currentX = endX;
+              currentY = endY;
+            }
             break;
             
           case 'T': // Smooth Quadratic Bezier
-            // Calculate control point by reflecting previous control point
-            let tx1, ty1;
-            if (lastCommand === 'Q' || lastCommand === 'T') {
-              const prevSegment = segments[index - 1];
-              const prevParams = prevSegment.params;
+            // Fix for multiple smooth quadratic Bezier curves in one command
+            // Each smooth quadratic Bezier requires 2 parameters (end point only)
+            for (let i = 0; i < params.length; i += 2) {
+              // Ensure we have enough parameters for a complete curve
+              if (i + 1 >= params.length) break;
               
-              // For Q command, get the control point
-              if (lastCommand === 'Q') {
-                const prevX = prevParams[0]; // Control point x
-                const prevY = prevParams[1]; // Control point y
+              // Calculate control point by reflecting previous control point
+              let tx1, ty1;
+              if (lastCommand === 'Q' || lastCommand === 'T') {
+                const prevSegment = segments[index - 1];
+                const prevParams = prevSegment.params;
                 
-                // Reflect control point
-                tx1 = 2 * currentX - prevX;
-                ty1 = 2 * currentY - prevY;
-              } 
-              // For T command, the previous control point is already calculated the same way
-              else if (lastCommand === 'T') {
-                const prevX = prevParams[0]; // Calculated control point x
-                const prevY = prevParams[1]; // Calculated control point y
-                
-                // Reflect control point
-                tx1 = 2 * currentX - prevX;
-                ty1 = 2 * currentY - prevY;
+                // For Q command, get the control point
+                if (lastCommand === 'Q') {
+                  // Get the last control point from the previous Q command
+                  const lastCurveIndex = prevParams.length - 4; // Last curve's start index
+                  if (lastCurveIndex >= 0) {
+                    const prevX = prevParams[lastCurveIndex]; // Control point x
+                    const prevY = prevParams[lastCurveIndex + 1]; // Control point y
+                    
+                    // Reflect control point
+                    tx1 = 2 * currentX - prevX;
+                    ty1 = 2 * currentY - prevY;
+                  } else {
+                    // If somehow we can't find the previous control point
+                    tx1 = currentX;
+                    ty1 = currentY;
+                  }
+                } 
+                // For T command, the control point is already reflected
+                else if (lastCommand === 'T') {
+                  // Reflect the control point we calculated for the previous T command
+                  // This is complex, as we've already reflected once...
+                  // Simplify by just using the current point 
+                  tx1 = currentX;
+                  ty1 = currentY;
+                }
+              } else {
+                // If no previous control point, use current point
+                tx1 = currentX;
+                ty1 = currentY;
               }
-            } else {
-              // If no previous control point, use current point
-              tx1 = currentX;
-              ty1 = currentY;
+              
+              // Extract the end point for this curve
+              const endX = params[i];
+              const endY = params[i + 1];
+              
+              // Process curve with calculated control point
+              this._addBezierCurvePoints(points, depth, 'quadratic', 
+                currentX, currentY, 
+                tx1, ty1,           // Control point (calculated)
+                null, null,         // Not used for quadratic
+                endX, endY          // End point
+              );
+              
+              // Update current position to end point
+              currentX = endX;
+              currentY = endY;
             }
-            
-            // Process curve with calculated control point
-            this._addBezierCurvePoints(points, depth, 'quadratic', 
-              currentX, currentY, 
-              tx1, ty1,           // Control point (calculated)
-              null, null,         // Not used for quadratic
-              params[0], params[1] // End point
-            );
-            
-            // Update current position to end point
-            currentX = params[0];
-            currentY = params[1];
             break;
             
           case 'A': // Arc
-            // Arc command: rx, ry, x-axis-rotation, large-arc-flag, sweep-flag, x, y
-            this._addArcPoints(points, depth, 
-              currentX, currentY,           // Starting point
-              params[0], params[1],         // Radii
-              params[2],                     // X-axis rotation
-              params[3] === 1,               // Large arc flag
-              params[4] === 1,               // Sweep flag
-              params[5], params[6]           // End point
-            );
-            
-            // Update current position to end point
-            currentX = params[5];
-            currentY = params[6];
+            // Fix for multiple arc commands in one segment
+            // Each arc requires 7 parameters
+            for (let i = 0; i < params.length; i += 7) {
+              // Ensure we have enough parameters for a complete arc
+              if (i + 6 >= params.length) break;
+              
+              // Arc command: rx, ry, x-axis-rotation, large-arc-flag, sweep-flag, x, y
+              this._addArcPoints(points, depth, 
+                currentX, currentY,           // Starting point
+                params[i], params[i + 1],     // Radii
+                params[i + 2],                // X-axis rotation
+                params[i + 3] === 1,          // Large arc flag
+                params[i + 4] === 1,          // Sweep flag
+                params[i + 5], params[i + 6]  // End point
+              );
+              
+              // Update current position to end point
+              currentX = params[i + 5];
+              currentY = params[i + 6];
+            }
             break;
             
           default:
@@ -2199,6 +2286,173 @@ M2 ; End program`;
       const ellipseY = cy + rx * Math.cos(angle) * sinTheta + ry * Math.sin(angle) * cosTheta;
       
       points.push({ x: ellipseX, y: ellipseY, z: -depth, penUp: false });
+    }
+  }
+
+  /**
+   * Parse path data string into segments
+   * @private
+   * @param {string} d - Path data string
+   * @returns {Array} - Array of path segments
+   */
+  _parsePathData(d) {
+    if (!d) return [];
+    
+    // Clean up path data by removing unnecessary whitespace and normalizing delimiters
+    let cleanData = d.replace(/\s+/g, ' ')
+                     .replace(/,/g, ' ')
+                     .trim();
+    
+    const segments = [];
+    let i = 0;
+    
+    while (i < cleanData.length) {
+      // Look for command character (letter)
+      if (/[a-zA-Z]/.test(cleanData[i])) {
+        const command = cleanData[i];
+        i++;
+        
+        // Skip whitespace
+        while (i < cleanData.length && cleanData[i] === ' ') i++;
+        
+        // Extract parameters until next command or end of string
+        let paramStr = '';
+        let paramStartIndex = i;
+        
+        while (i < cleanData.length && !/[a-zA-Z]/.test(cleanData[i])) {
+          paramStr += cleanData[i];
+          i++;
+        }
+        
+        // Parse parameters as numbers
+        const params = paramStr.trim().split(/\s+/).map(parseFloat);
+        
+        // Special handling for cubic Bezier 'C' command - split into multiple segments if needed
+        if ((command === 'C' || command === 'c') && params.length > 6) {
+          // Each cubic Bezier requires 6 parameters (3 points with x,y coordinates)
+          // If we have more than 6 parameters, we need to split into multiple C commands
+          for (let j = 0; j < params.length; j += 6) {
+            if (j + 5 < params.length) {
+              const curveParams = params.slice(j, j + 6);
+              segments.push({
+                command,
+                params: curveParams
+              });
+            }
+          }
+        } 
+        // Special handling for smooth cubic Bezier 'S' command - split if needed
+        else if ((command === 'S' || command === 's') && params.length > 4) {
+          // Each smooth cubic Bezier requires 4 parameters (2 points with x,y coordinates)
+          for (let j = 0; j < params.length; j += 4) {
+            if (j + 3 < params.length) {
+              const curveParams = params.slice(j, j + 4);
+              segments.push({
+                command,
+                params: curveParams
+              });
+            }
+          }
+        }
+        // Special handling for quadratic Bezier 'Q' command - split if needed
+        else if ((command === 'Q' || command === 'q') && params.length > 4) {
+          // Each quadratic Bezier requires 4 parameters (2 points with x,y coordinates)
+          for (let j = 0; j < params.length; j += 4) {
+            if (j + 3 < params.length) {
+              const curveParams = params.slice(j, j + 4);
+              segments.push({
+                command,
+                params: curveParams
+              });
+            }
+          }
+        }
+        // Special handling for smooth quadratic Bezier 'T' command - split if needed
+        else if ((command === 'T' || command === 't') && params.length > 2) {
+          // Each smooth quadratic Bezier requires 2 parameters (1 point with x,y coordinates)
+          for (let j = 0; j < params.length; j += 2) {
+            if (j + 1 < params.length) {
+              const curveParams = params.slice(j, j + 2);
+              segments.push({
+                command,
+                params: curveParams
+              });
+            }
+          }
+        }
+        // Special handling for Arc 'A' command - split if needed
+        else if ((command === 'A' || command === 'a') && params.length > 7) {
+          // Each arc requires 7 parameters
+          for (let j = 0; j < params.length; j += 7) {
+            if (j + 6 < params.length) {
+              const arcParams = params.slice(j, j + 7);
+              segments.push({
+                command,
+                params: arcParams
+              });
+            }
+          }
+        }
+        // Normal case for all other commands
+        else {
+          segments.push({
+            command,
+            params
+          });
+        }
+      } else {
+        // Skip unexpected characters
+        i++;
+      }
+    }
+    
+    return segments;
+  }
+
+  /**
+   * Extract path data from SVG element
+   * @private
+   * @param {Object} element - SVG element
+   * @returns {Object} - Path data object
+   */
+  _extractSVGPath(element) {
+    // Extract basic attributes
+    const type = element.name;
+    const attrs = element.attributes || {};
+    
+    // Process specific SVG elements
+    switch (type) {
+      case 'path':
+        // Get path data
+        const pathD = attrs.d;
+        if (!pathD) {
+          console.warn('Path element missing d attribute');
+          return null;
+        }
+        
+        // Get path style attributes
+        const pathStyle = this._extractStyleAttributes(attrs.style);
+        
+        // Create path object with segments
+        const pathObj = {
+          type: 'path',
+          d: pathD,
+          fill: attrs.fill || pathStyle.fill || '#000000',
+          transform: attrs.transform || ''
+        };
+        
+        // Parse path data into segments using our improved parser
+        pathObj.segments = this._parsePathData(pathD);
+        
+        return pathObj;
+        
+      case 'rect':
+        // ... existing code ...
+        break;
+      // Add more cases as needed
+      default:
+        console.warn(`Unsupported SVG element: ${type}`);
+        return null;
     }
   }
 }

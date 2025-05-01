@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SVG to GCode Converter - Codebase Improvement Tasks - SVG to GCode Converter</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: 'default',
+        securityLevel: 'loose',
+        flowchart: { 
+          useMaxWidth: true,
+          htmlLabels: true
+        }
+      });
+
+      // Add active class to current page link
+      const currentPage = window.location.pathname.split('/').pop();
+      const navLinks = document.querySelectorAll('.nav-links a');
+      navLinks.forEach(link => {
+        const linkHref = link.getAttribute('href');
+        if (linkHref === currentPage || (currentPage === 'index.html' && linkHref === 'README.html')) {
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+  
+  <div class="mobile-nav">
+    <a href="index.html">Home</a>
+    <a href="installation_guide.html">Installation</a>
+    <a href="user_guide.html">User Guide</a>
+    <a href="developer_guide.html">For Developers</a>
+  </div>
+  
+  
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>SVG to GCode Converter</h2>
+      <p>Documentation</p>
+    </div>
+  
+    <div class="nav-section">
+      <div class="nav-section-title">Getting Started</div>
+      <ul class="nav-links">
+    <li><a href="README.html">Documentation Overview</a></li><li><a href="project_description.html">Project Overview</a></li><li><a href="installation_guide.html">Installation Guide</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">User Documentation</div>
+      <ul class="nav-links">
+    <li><a href="user_guide.html">User Guide</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">Technical Documentation</div>
+      <ul class="nav-links">
+    <li><a href="architecture_design.html">Architecture Design</a></li><li><a href="technical_specification.html">Technical Specification</a></li><li><a href="technology_stack.html">Technology Stack</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">Developer Documentation</div>
+      <ul class="nav-links">
+    <li><a href="developer_guide.html">Developer Guide</a></li><li><a href="implementation_steps.html">Implementation Steps</a></li><li><a href="codebase_improvements.html" class="active">Codebase Improvements</a></li><li><a href="assessment_checklists.html">Assessment Checklists</a></li>
+      </ul>
+    </div>
+    </div>
+  <div class="main-content">
+    <h1 id="svg-to-gcode-converter---codebase-improvement-tasks">SVG to GCode Converter - Codebase Improvement Tasks</h1>
+<h2 id="code-organization-and-structure">Code Organization and Structure</h2>
+<ul>
+<li><p><input disabled="" type="checkbox"> 
+<strong>Move Test Files from <code>src/</code> to <code>tests/</code></strong></p>
+<ul>
+<li>Several test files (<code>test-circle-fix.js</code>, <code>test-arc-direct.js</code>, etc.) are in the main source directory</li>
+<li>These should be reorganized into the existing <code>tests/</code> directory with a proper structure</li>
+</ul>
+</li>
+<li><p><input disabled="" type="checkbox"> 
+<strong>Organize Debug Scripts</strong></p>
+<ul>
+<li>Move debug scripts (<code>debug-circles.js</code>) to a dedicated <code>debug/</code> directory</li>
+<li>Consider adding documentation on how these debug scripts are used</li>
+</ul>
+</li>
+<li><p><input disabled="" type="checkbox"> 
+<strong>Consolidate Related Functionality</strong></p>
+<ul>
+<li>Group the circle/arc fix files together in a dedicated module</li>
+<li>Files like <code>apply-circle-arc-fix.js</code> and <code>circle-arc-fix.js</code> should be in the same directory</li>
+</ul>
+</li>
+<li><p><input disabled="" type="checkbox"> 
+<strong>Implement TypeScript</strong></p>
+<ul>
+<li>Convert JavaScript files to TypeScript as mentioned in the technology stack document</li>
+<li>Create appropriate interfaces based on the technical specification</li>
+</ul>
+</li>
+<li><p><input disabled="" type="checkbox"> 
+<strong>Reorganize Root Directory</strong></p>
+<ul>
+<li>Create a <code>scripts/</code> directory for build and utility scripts</li>
+<li>Ensure the <code>debug_output/</code> directory is included in <code>.gitignore</code></li>
+</ul>
+</li>
+</ul>
+<h2 id="code-quality">Code Quality</h2>
+<ul>
+<li><p><input disabled="" type="checkbox"> 
+<strong>Add ESLint Configuration</strong></p>
+<ul>
+<li>Create a proper <code>.eslintrc.js</code> file to enforce coding standards</li>
+<li>Implement the linting recommendations from the technology stack document</li>
+</ul>
+</li>
+<li><p><input disabled="" type="checkbox"> 
+<strong>Add TypeScript Configuration</strong></p>
+<ul>
+<li>Create a <code>tsconfig.json</code> file for TypeScript compilation</li>
+<li>Configure TypeScript with strict type checking</li>
+</ul>
+</li>
+<li><p><input disabled="" type="checkbox"> 
+<strong>Improve Main Components Structure</strong></p>
+<ul>
+<li>Refactor <code>svg-processor.js</code> (55KB, 1659 lines) into smaller, more manageable modules</li>
+<li>Split large files according to the component architecture in the docs</li>
+</ul>
+</li>
+<li><p><input disabled="" type="checkbox"> 
+<strong>Implement Project Documentation</strong></p>
+<ul>
+<li>Add JSDoc comments to functions and classes</li>
+<li>Generate API documentation from code comments</li>
+</ul>
+</li>
+</ul>
+<h2 id="build-and-deployment">Build and Deployment</h2>
+<ul>
+<li><p><input disabled="" type="checkbox"> 
+<strong>Optimize Webpack Configuration</strong></p>
+<ul>
+<li>Create a proper webpack configuration file</li>
+<li>Implement production and development environment settings</li>
+</ul>
+</li>
+<li><p><input disabled="" type="checkbox"> 
+<strong>Improve Package Structure</strong></p>
+<ul>
+<li>Update <code>package.json</code> to better organize scripts and dependencies</li>
+<li>Consider using npm workspaces or a monorepo structure for better organization</li>
+</ul>
+</li>
+<li><p><input disabled="" type="checkbox"> 
+<strong>Setup Continuous Integration</strong></p>
+<ul>
+<li>Add GitHub Actions workflow files for CI/CD</li>
+<li>Implement automated testing and building</li>
+</ul>
+</li>
+</ul>
+<h2 id="feature-implementation">Feature Implementation</h2>
+<ul>
+<li><p><input disabled="" type="checkbox"> 
+<strong>Align with Technical Architecture</strong></p>
+<ul>
+<li>Implement the component interfaces described in the technical specification</li>
+<li>Ensure the code structure follows the architecture design document</li>
+</ul>
+</li>
+<li><p><input disabled="" type="checkbox"> 
+<strong>Implement Missing Components</strong></p>
+<ul>
+<li>Check if all components described in the architecture are implemented</li>
+<li>Create stubs for any missing components</li>
+</ul>
+</li>
+<li><p><input disabled="" type="checkbox"> 
+<strong>Add Unit Tests</strong></p>
+<ul>
+<li>Create comprehensive test coverage for core functionality</li>
+<li>Implement tests for edge cases mentioned in documentation</li>
+</ul>
+</li>
+</ul>
+<h2 id="uiux-improvements">UI/UX Improvements</h2>
+<ul>
+<li><p><input disabled="" type="checkbox"> 
+<strong>Implement React Components</strong></p>
+<ul>
+<li>Convert the UI to React as specified in the technology stack</li>
+<li>Organize UI components in proper directory structure</li>
+</ul>
+</li>
+<li><p><input disabled="" type="checkbox"> 
+<strong>Add Tailwind CSS Support</strong></p>
+<ul>
+<li>Set up Tailwind CSS for styling as mentioned in technology stack</li>
+<li>Implement responsive design for the UI</li>
+</ul>
+</li>
+</ul>
+<h2 id="performance-optimization">Performance Optimization</h2>
+<ul>
+<li><p><input disabled="" type="checkbox"> 
+<strong>Implement Web Workers</strong></p>
+<ul>
+<li>Set up Web Workers for CPU-intensive operations as mentioned in the technology stack</li>
+<li>Move path processing to background threads</li>
+</ul>
+</li>
+<li><p><input disabled="" type="checkbox"> 
+<strong>Optimize SVG Parsing</strong></p>
+<ul>
+<li>Review and optimize the SVG parsing implementation</li>
+<li>Implement incremental processing for large files</li>
+</ul>
+</li>
+</ul>
+<h2 id="documentation">Documentation</h2>
+<ul>
+<li><p><input disabled="" type="checkbox"> 
+<strong>Create User Documentation</strong></p>
+<ul>
+<li>Add user guides and tutorials</li>
+<li>Document configuration options</li>
+</ul>
+</li>
+<li><p><input disabled="" type="checkbox"> 
+<strong>Update Development Documentation</strong></p>
+<ul>
+<li>Ensure code organization reflects the architecture documents</li>
+<li>Update technical specifications based on implementation</li>
+</ul>
+</li>
+</ul>
+<h2 id="priority-order">Priority Order</h2>
+<ol>
+<li>Code organization and structure (tasks 1-5)</li>
+<li>Implement TypeScript and code quality improvements (tasks 6-9)</li>
+<li>Feature implementation alignment with architecture (tasks 13-15)</li>
+<li>UI/UX implementation with React (tasks 16-17)</li>
+<li>Build, deployment, and CI setup (tasks 10-12)</li>
+<li>Performance optimizations (tasks 18-19)</li>
+<li>Documentation updates (tasks 20-21)</li>
+</ol>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SVG to GCode Converter - Architecture Design - SVG to GCode Converter</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: 'default',
+        securityLevel: 'loose',
+        flowchart: { 
+          useMaxWidth: true,
+          htmlLabels: true
+        }
+      });
+
+      // Add active class to current page link
+      const currentPage = window.location.pathname.split('/').pop();
+      const navLinks = document.querySelectorAll('.nav-links a');
+      navLinks.forEach(link => {
+        const linkHref = link.getAttribute('href');
+        if (linkHref === currentPage || (currentPage === 'index.html' && linkHref === 'README.html')) {
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+  
+  <div class="mobile-nav">
+    <a href="index.html">Home</a>
+    <a href="installation_guide.html">Installation</a>
+    <a href="user_guide.html">User Guide</a>
+    <a href="developer_guide.html">For Developers</a>
+  </div>
+  
+  
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>SVG to GCode Converter</h2>
+      <p>Documentation</p>
+    </div>
+  
+    <div class="nav-section">
+      <div class="nav-section-title">Getting Started</div>
+      <ul class="nav-links">
+    <li><a href="README.html">Documentation Overview</a></li><li><a href="project_description.html">Project Overview</a></li><li><a href="installation_guide.html">Installation Guide</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">User Documentation</div>
+      <ul class="nav-links">
+    <li><a href="user_guide.html">User Guide</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">Technical Documentation</div>
+      <ul class="nav-links">
+    <li><a href="architecture_design.html" class="active">Architecture Design</a></li><li><a href="technical_specification.html">Technical Specification</a></li><li><a href="technology_stack.html">Technology Stack</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">Developer Documentation</div>
+      <ul class="nav-links">
+    <li><a href="developer_guide.html">Developer Guide</a></li><li><a href="implementation_steps.html">Implementation Steps</a></li><li><a href="codebase_improvements.html">Codebase Improvements</a></li><li><a href="assessment_checklists.html">Assessment Checklists</a></li>
+      </ul>
+    </div>
+    </div>
+  <div class="main-content">
+    <h1 id="svg-to-gcode-converter---architecture-design">SVG to GCode Converter - Architecture Design</h1>
+<h2 id="system-overview">System Overview</h2>
+<p>The SVG to GCode Converter is designed as a standalone desktop application that transforms SVG vector files into GRBL-compatible GCode, using grayscale color information to determine cutting depth. The architecture uses a centralized processing approach with a main SVG Processor component that coordinates several specialized modules.</p>
+<h3 id="component-design-diagram">Component Design Diagram</h3>
+<div class="mermaid">flowchart LR
+    A[Main Application] --> B[SVG Processor]
+    B --> C[Path Generator]
+    B --> D[GCode Generator]
+    
+    A -.-> F[User Interface]
+    B -.-> G[Visualization Engine]
+    G -.-> F
+    
+    classDef main fill:#d86c35,stroke:#fff,stroke-width:2px,color:#fff
+    classDef ui fill:#2d7eb5,stroke:#fff,stroke-width:2px,color:#fff
+    class A,B,C,D main
+    class F,G ui</div><h2 id="core-components">Core Components</h2>
+<h3 id="1-main-application-indexjs">1. Main Application (<code>index.js</code>)</h3>
+<p><strong>Purpose</strong>: Serves as the application entry point and handles UI integration.</p>
+<p><strong>Responsibilities</strong>:</p>
+<ul>
+<li>Electron app initialization</li>
+<li>Window management</li>
+<li>Menu creation</li>
+<li>File dialog operations</li>
+<li>Update checking</li>
+<li>Configuration loading/saving</li>
+</ul>
+<p><strong>Technical Approach</strong>:</p>
+<ul>
+<li>Electron-based desktop application</li>
+<li>Local file system access</li>
+<li>Configuration persistence</li>
+</ul>
+<h3 id="2-svg-processor-svg-processorjs">2. SVG Processor (<code>svg-processor.js</code>)</h3>
+<p><strong>Purpose</strong>: Central component that manages SVG parsing, processing, and coordination with other modules.</p>
+<p><strong>Responsibilities</strong>:</p>
+<ul>
+<li>Parse SVG files and extract path data</li>
+<li>Process grayscale color attributes</li>
+<li>Convert vector paths to machine-ready paths</li>
+<li>Coordinate toolpath generation</li>
+<li>Provide visualization data</li>
+<li>Orchestrate the GCode generation process</li>
+</ul>
+<p><strong>Technical Approach</strong>:</p>
+<ul>
+<li>Utilizes svg-parser and other SVG libraries</li>
+<li>Implements grayscale to depth mapping</li>
+<li>Coordinates with Path Generator and GCode Generator</li>
+</ul>
+<h3 id="3-path-generator-toolpathpath-generatorjs">3. Path Generator (<code>toolpath/path-generator.js</code>)</h3>
+<p><strong>Purpose</strong>: Converts processed paths to optimized toolpaths.</p>
+<p><strong>Responsibilities</strong>:</p>
+<ul>
+<li>Generate optimized machine toolpaths</li>
+<li>Handle path optimization and efficiency</li>
+<li>Apply machine-specific constraints</li>
+<li>Support different cutting strategies</li>
+</ul>
+<p><strong>Technical Approach</strong>:</p>
+<ul>
+<li>Path optimization algorithms</li>
+<li>Cutting strategy implementations</li>
+<li>Machine constraint management</li>
+</ul>
+<h3 id="4-gcode-generator-gcodegcode-generatorjs">4. GCode Generator (<code>gcode/gcode-generator.js</code>)</h3>
+<p><strong>Purpose</strong>: Produces GRBL-compatible GCode from toolpaths.</p>
+<p><strong>Responsibilities</strong>:</p>
+<ul>
+<li>Format toolpaths as GCode commands</li>
+<li>Add machine-specific commands and parameters</li>
+<li>Optimize for GRBL controller</li>
+<li>Include appropriate headers and safety features</li>
+<li>Format output file</li>
+</ul>
+<p><strong>Technical Approach</strong>:</p>
+<ul>
+<li>GRBL-specific command generation</li>
+<li>GCode optimization techniques</li>
+<li>Proper command sequencing</li>
+</ul>
+<h3 id="5-visualization-engine">5. Visualization Engine</h3>
+<p><strong>Purpose</strong>: Provides visual feedback throughout the conversion process.</p>
+<p><strong>Responsibilities</strong>:</p>
+<ul>
+<li>Render SVG input</li>
+<li>Visualize resulting toolpaths</li>
+<li>Show depth mapping with color coding</li>
+<li>Display estimated cutting time and path statistics</li>
+</ul>
+<p><strong>Technical Approach</strong>:</p>
+<ul>
+<li>Visualization methods in SVG Processor</li>
+<li>SVG-based rendering for preview</li>
+<li>Color-coded depth visualization</li>
+</ul>
+<h3 id="6-user-interface">6. User Interface</h3>
+<p><strong>Purpose</strong>: Provides user interaction for file handling, parameter configuration, and visualization.</p>
+<p><strong>Responsibilities</strong>:</p>
+<ul>
+<li>Present controls for file operations</li>
+<li>Display conversion status and results</li>
+<li>Allow parameter adjustment</li>
+<li>Support configuration profiles</li>
+<li>Handle error reporting</li>
+</ul>
+<p><strong>Technical Approach</strong>:</p>
+<ul>
+<li>Electron-based UI</li>
+<li>HTML/CSS/JavaScript interface</li>
+<li>Integration with main application</li>
+</ul>
+<h3 id="component-class-structure">Component Class Structure</h3>
+<div class="mermaid">classDiagram
+    class MainApplication {
+        +createWindow()
+        +createAppMenu()
+        +openSVGFile()
+        +saveGCodeFile()
+        +loadConfiguration()
+        +saveConfiguration()
+    }
+    
+    class SVGProcessor {
+        +convertToGCode(svgData, config)
+        +getProcessedData(svgData, config)
+        +getToolpathData(input, config)
+        +generateGCode(toolpathData, config)
+        +extractPaths(parsed)
+        +processPaths(paths)
+        +generateToolpath(path, config)
+        +getSVGVisualization()
+        +getToolpathVisualization()
+        +getGCodeVisualization()
+    }
+    
+    class PathGenerator {
+        +generate(processedData, config)
+        +optimizePaths(paths)
+        +calculateToolpaths(paths)
+        +handleSafeTravel(points)
+    }
+    
+    class GCodeGenerator {
+        +generate(toolpaths, config)
+        +formatMovement(movement)
+        +generateHeader(config, metadata)
+        +generateFooter(config)
+    }
+    
+    class UpdateManager {
+        +checkForUpdates(silent)
+        +installUpdate()
+        +isUpdateReady()
+    }
+    
+    class UIComponents {
+        +displayStatus(status)
+        +showPreview(preview)
+        +handleUserInput()
+        +showConfiguration()
+        +reportErrors(errors)
+    }
+    
+    MainApplication --> SVGProcessor
+    MainApplication --> UpdateManager
+    SVGProcessor --> PathGenerator
+    SVGProcessor --> GCodeGenerator
+    MainApplication --> UIComponents</div><h2 id="additional-components">Additional Components</h2>
+<h3 id="circle-and-arc-fix-utilities">Circle and Arc Fix Utilities</h3>
+<p>The implementation includes specific utilities for handling SVG circles and arcs:</p>
+<ul>
+<li><code>circle-arc-fix.js</code>: Algorithms for correcting circle and arc representations</li>
+<li><code>apply-circle-arc-fix.js</code>: Application of the fixing algorithms</li>
+</ul>
+<p>These components ensure accurate conversion of circular elements from SVG to GCode.</p>
+<h3 id="update-manager-update-managerjs">Update Manager (<code>update-manager.js</code>)</h3>
+<p>The application includes an update management system that:</p>
+<ul>
+<li>Checks for application updates</li>
+<li>Manages the update download and installation process</li>
+<li>Integrates with Electron&#39;s update mechanisms</li>
+</ul>
+<h2 id="data-flow">Data Flow</h2>
+<h3 id="current-data-flow">Current Data Flow</h3>
+<div class="mermaid">sequenceDiagram
+    actor User
+    participant UI as User Interface
+    participant App as Main Application
+    participant SVG as SVG Processor
+    participant PG as Path Generator
+    participant GG as GCode Generator
+    
+    User->>UI: Load SVG file
+    UI->>App: Process file
+    App->>SVG: Pass SVG data
+    
+    SVG->>SVG: Parse SVG
+    SVG->>SVG: Process paths
+    SVG->>UI: Update SVG preview
+    
+    SVG->>PG: Request toolpath generation
+    PG->>PG: Generate toolpaths
+    PG->>SVG: Return toolpaths
+    SVG->>UI: Update toolpath preview
+    
+    SVG->>GG: Request GCode generation
+    GG->>GG: Generate GCode
+    GG->>SVG: Return GCode
+    SVG->>UI: Update GCode preview
+    
+    User->>UI: Save GCode
+    UI->>App: Save to file
+    App-->>User: Confirm save</div><h2 id="technical-architecture">Technical Architecture</h2>
+<h3 id="application-structure">Application Structure</h3>
+<ul>
+<li>Standalone desktop application (Electron)</li>
+<li>Local file system access</li>
+<li>Completely offline operation</li>
+<li>SVG Processor as central coordination component</li>
+</ul>
+<h3 id="directory-structure">Directory Structure</h3>
+<pre><code>/svg-to-gcode-converter
+├── src/
+│   ├── index.js               # Main application entry point
+│   ├── svg-processor.js       # Central processing component
+│   ├── preload.js             # Electron preload script
+│   ├── update-manager.js      # Update management
+│   ├── parser/                # SVG parsing modules
+│   ├── processor/             # Processing utilities
+│   ├── toolpath/              # Toolpath generation
+│   ├── gcode/                 # GCode generation
+│   ├── visualization/         # Visualization utilities
+│   ├── ui/                    # User interface components
+│   ├── models/                # Data models
+│   └── utils/                 # Utility functions
+├── tests/                     # Test files
+├── docs/                      # Documentation
+├── examples/                  # Example SVG files
+├── output/                    # Default output directory
+└── debug_output/              # Debug files and visualizations
+</code></pre>
+<h3 id="libraries-and-dependencies">Libraries and Dependencies</h3>
+<ul>
+<li>Electron for desktop application framework</li>
+<li>svg-parser and related libraries for SVG processing</li>
+<li>JSDOM for DOM manipulation</li>
+<li>Bezier.js for curve manipulation</li>
+<li>ColorConvert for color processing</li>
+</ul>
+<h2 id="development-roadmap">Development Roadmap</h2>
+<h3 id="completed-development">Completed Development</h3>
+<ul>
+<li>Basic SVG parsing</li>
+<li>Simple grayscale-to-depth mapping</li>
+<li>GRBL GCode generation</li>
+<li>Minimal Electron-based UI</li>
+<li>Circle and arc processing utilities</li>
+<li>Update management system</li>
+</ul>
+<h3 id="current-priorities">Current Priorities</h3>
+<ul>
+<li>Code organization and refactoring</li>
+<li>Moving test files to a dedicated tests directory</li>
+<li>Improving the monolithic structure of SVG Processor</li>
+<li>Adding proper documentation</li>
+</ul>
+<h3 id="future-enhancements">Future Enhancements</h3>
+<ul>
+<li>Enhanced visualization</li>
+<li>Configuration profiles</li>
+<li>Additional machine support</li>
+<li>Enhanced documentation</li>
+</ul>
+<h2 id="deployment-considerations">Deployment Considerations</h2>
+<h3 id="installation">Installation</h3>
+<ul>
+<li>Simple installer for hobbyist users</li>
+<li>Minimal dependencies</li>
+<li>Small footprint</li>
+</ul>
+<h3 id="updates">Updates</h3>
+<ul>
+<li>Update mechanism through UpdateManager</li>
+<li>Version compatibility checks</li>
+<li>Configuration migration</li>
+</ul>
+<h3 id="system-requirements">System Requirements</h3>
+<ul>
+<li>Standard desktop/laptop</li>
+<li>Local file system access</li>
+<li>No internet requirement (except for updates)</li>
+<li>Minimal resource usage</li>
+</ul>
+
+  </div>
+</body>
+</html>

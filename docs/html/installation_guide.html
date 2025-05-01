@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SVG to GCode Converter - Installation Guide - SVG to GCode Converter</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: 'default',
+        securityLevel: 'loose',
+        flowchart: { 
+          useMaxWidth: true,
+          htmlLabels: true
+        }
+      });
+
+      // Add active class to current page link
+      const currentPage = window.location.pathname.split('/').pop();
+      const navLinks = document.querySelectorAll('.nav-links a');
+      navLinks.forEach(link => {
+        const linkHref = link.getAttribute('href');
+        if (linkHref === currentPage || (currentPage === 'index.html' && linkHref === 'README.html')) {
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+  
+  <div class="mobile-nav">
+    <a href="index.html">Home</a>
+    <a href="installation_guide.html">Installation</a>
+    <a href="user_guide.html">User Guide</a>
+    <a href="developer_guide.html">For Developers</a>
+  </div>
+  
+  
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>SVG to GCode Converter</h2>
+      <p>Documentation</p>
+    </div>
+  
+    <div class="nav-section">
+      <div class="nav-section-title">Getting Started</div>
+      <ul class="nav-links">
+    <li><a href="README.html">Documentation Overview</a></li><li><a href="project_description.html">Project Overview</a></li><li><a href="installation_guide.html" class="active">Installation Guide</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">User Documentation</div>
+      <ul class="nav-links">
+    <li><a href="user_guide.html">User Guide</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">Technical Documentation</div>
+      <ul class="nav-links">
+    <li><a href="architecture_design.html">Architecture Design</a></li><li><a href="technical_specification.html">Technical Specification</a></li><li><a href="technology_stack.html">Technology Stack</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">Developer Documentation</div>
+      <ul class="nav-links">
+    <li><a href="developer_guide.html">Developer Guide</a></li><li><a href="implementation_steps.html">Implementation Steps</a></li><li><a href="codebase_improvements.html">Codebase Improvements</a></li><li><a href="assessment_checklists.html">Assessment Checklists</a></li>
+      </ul>
+    </div>
+    </div>
+  <div class="main-content">
+    <h1 id="svg-to-gcode-converter---installation-guide">SVG to GCode Converter - Installation Guide</h1>
+<p>This guide will help you install the SVG to GCode Converter on your system.</p>
+<h2 id="system-requirements">System Requirements</h2>
+<p>Before installing, ensure your system meets these minimum requirements:</p>
+<ul>
+<li><strong>Operating System</strong>:<ul>
+<li>Windows 10 or 11 (64-bit)</li>
+<li>macOS 10.14 or later</li>
+<li>Linux (Ubuntu 18.04+, Debian 10+, Fedora 30+, or similar)</li>
+</ul>
+</li>
+<li><strong>Hardware</strong>:<ul>
+<li>4GB RAM (8GB recommended for large SVG files)</li>
+<li>200MB free disk space</li>
+<li>1280x720 screen resolution or higher</li>
+</ul>
+</li>
+<li><strong>Additional</strong>:<ul>
+<li>Internet connection (for updates)</li>
+</ul>
+</li>
+</ul>
+<h2 id="installation-instructions">Installation Instructions</h2>
+<h3 id="windows">Windows</h3>
+<ol>
+<li><p><strong>Download the installer</strong>:</p>
+<ul>
+<li>Go to the <a href="https://github.com/svg-to-gcode/svg-to-gcode-converter/releases">releases page</a></li>
+<li>Download the latest <code>SVG-to-GCode-Converter-Setup-x.x.x.exe</code> file</li>
+</ul>
+</li>
+<li><p><strong>Run the installer</strong>:</p>
+<ul>
+<li>Double-click the downloaded <code>.exe</code> file</li>
+<li>If you see a security warning, click &quot;More info&quot; and then &quot;Run anyway&quot;</li>
+<li>Follow the on-screen instructions</li>
+<li>Choose the installation location (default is recommended)</li>
+<li>Select whether to create desktop and Start menu shortcuts</li>
+</ul>
+</li>
+<li><p><strong>Launch the application</strong>:</p>
+<ul>
+<li>After installation completes, you can launch the application from:<ul>
+<li>The desktop shortcut (if created)</li>
+<li>The Start menu</li>
+<li>The installation directory</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="macos">macOS</h3>
+<ol>
+<li><p><strong>Download the disk image</strong>:</p>
+<ul>
+<li>Go to the <a href="https://github.com/svg-to-gcode/svg-to-gcode-converter/releases">releases page</a></li>
+<li>Download the latest <code>SVG-to-GCode-Converter-x.x.x.dmg</code> file</li>
+</ul>
+</li>
+<li><p><strong>Install the application</strong>:</p>
+<ul>
+<li>Double-click the downloaded <code>.dmg</code> file to open it</li>
+<li>Drag the SVG to GCode Converter icon to the Applications folder</li>
+<li>Eject the disk image</li>
+</ul>
+</li>
+<li><p><strong>First Launch</strong>:</p>
+<ul>
+<li>Open the Applications folder</li>
+<li>Right-click (or Ctrl+click) on &quot;SVG to GCode Converter&quot;</li>
+<li>Select &quot;Open&quot; from the context menu</li>
+<li>Click &quot;Open&quot; on the security dialog (only needed the first time)</li>
+</ul>
+</li>
+</ol>
+<h3 id="linux">Linux</h3>
+<h4 id="appimage-recommended-for-most-users">AppImage (Recommended for most users)</h4>
+<ol>
+<li><p><strong>Download the AppImage</strong>:</p>
+<ul>
+<li>Go to the <a href="https://github.com/svg-to-gcode/svg-to-gcode-converter/releases">releases page</a></li>
+<li>Download the latest <code>SVG-to-GCode-Converter-x.x.x.AppImage</code> file</li>
+</ul>
+</li>
+<li><p><strong>Make it executable</strong>:</p>
+<ul>
+<li>Open a terminal</li>
+<li>Navigate to the download location</li>
+<li>Run: <code>chmod +x SVG-to-GCode-Converter-x.x.x.AppImage</code></li>
+</ul>
+</li>
+<li><p><strong>Run the application</strong>:</p>
+<ul>
+<li>Double-click the AppImage file or run it from terminal:</li>
+<li><code>./SVG-to-GCode-Converter-x.x.x.AppImage</code></li>
+</ul>
+</li>
+</ol>
+<h4 id="debianubuntu-deb">Debian/Ubuntu (.deb)</h4>
+<ol>
+<li><p><strong>Download the package</strong>:</p>
+<ul>
+<li>Go to the <a href="https://github.com/svg-to-gcode/svg-to-gcode-converter/releases">releases page</a></li>
+<li>Download the latest <code>svg-to-gcode-converter_x.x.x_amd64.deb</code> file</li>
+</ul>
+</li>
+<li><p><strong>Install the package</strong>:</p>
+<ul>
+<li>Open a terminal</li>
+<li>Navigate to the download location</li>
+<li>Run: <code>sudo apt install ./svg-to-gcode-converter_x.x.x_amd64.deb</code></li>
+</ul>
+</li>
+<li><p><strong>Launch the application</strong>:</p>
+<ul>
+<li>From the applications menu, or</li>
+<li>Run <code>svg-to-gcode-converter</code> in terminal</li>
+</ul>
+</li>
+</ol>
+<h4 id="fedorarhelcentos-rpm">Fedora/RHEL/CentOS (.rpm)</h4>
+<ol>
+<li><p><strong>Download the package</strong>:</p>
+<ul>
+<li>Go to the <a href="https://github.com/svg-to-gcode/svg-to-gcode-converter/releases">releases page</a></li>
+<li>Download the latest <code>svg-to-gcode-converter-x.x.x.x86_64.rpm</code> file</li>
+</ul>
+</li>
+<li><p><strong>Install the package</strong>:</p>
+<ul>
+<li>Open a terminal</li>
+<li>Navigate to the download location</li>
+<li>Run: <code>sudo dnf install ./svg-to-gcode-converter-x.x.x.x86_64.rpm</code></li>
+</ul>
+</li>
+<li><p><strong>Launch the application</strong>:</p>
+<ul>
+<li>From the applications menu, or</li>
+<li>Run <code>svg-to-gcode-converter</code> in terminal</li>
+</ul>
+</li>
+</ol>
+<h2 id="development-installation">Development Installation</h2>
+<p>For developers who want to run the application from source:</p>
+<ol>
+<li><p><strong>Clone the repository</strong>:</p>
+<pre><code class="language-bash">git clone https://github.com/svg-to-gcode/svg-to-gcode-converter.git
+cd svg-to-gcode-converter
+</code></pre>
+</li>
+<li><p><strong>Install dependencies</strong>:</p>
+<pre><code class="language-bash">npm install
+</code></pre>
+</li>
+<li><p><strong>Run in development mode</strong>:</p>
+<pre><code class="language-bash">npm run dev
+</code></pre>
+</li>
+</ol>
+<h2 id="troubleshooting-installation-issues">Troubleshooting Installation Issues</h2>
+<h3 id="windows-1">Windows</h3>
+<ul>
+<li><p><strong>&quot;Windows protected your PC&quot; message</strong>:</p>
+<ul>
+<li>Click &quot;More info&quot; and then &quot;Run anyway&quot;</li>
+<li>This happens because the app is not signed with a Microsoft-verified certificate</li>
+</ul>
+</li>
+<li><p><strong>Missing DLL error</strong>:</p>
+<ul>
+<li>Install the latest <a href="https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads">Visual C++ Redistributable</a></li>
+</ul>
+</li>
+</ul>
+<h3 id="macos-1">macOS</h3>
+<ul>
+<li><p><strong>&quot;App is damaged and can&#39;t be opened&quot; message</strong>:</p>
+<ul>
+<li>Open System Preferences &gt; Security &amp; Privacy</li>
+<li>Click &quot;Open Anyway&quot; for the application</li>
+<li>Or run: <code>xattr -d com.apple.quarantine /Applications/SVG\ to\ GCode\ Converter.app</code></li>
+</ul>
+</li>
+<li><p><strong>&quot;App is from an unidentified developer&quot; message</strong>:</p>
+<ul>
+<li>Right-click (or Ctrl+click) on the app in Finder</li>
+<li>Select &quot;Open&quot; from the context menu</li>
+<li>Click &quot;Open&quot; in the dialog</li>
+</ul>
+</li>
+</ul>
+<h3 id="linux-1">Linux</h3>
+<ul>
+<li><p><strong>AppImage not launching</strong>:</p>
+<ul>
+<li>Ensure it&#39;s executable: <code>chmod +x SVG-to-GCode-Converter-x.x.x.AppImage</code></li>
+<li>Install required libraries: <code>sudo apt install libfuse2</code> (on newer systems)</li>
+</ul>
+</li>
+<li><p><strong>Missing dependencies on older systems</strong>:</p>
+<ul>
+<li>Install required packages: <pre><code>sudo apt update
+sudo apt install libgtk-3-0 libnotify4 libnss3 libxss1 libxtst6 xdg-utils libatspi2.0-0 libuuid1
+</code></pre>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="uninstallation">Uninstallation</h2>
+<h3 id="windows-2">Windows</h3>
+<ul>
+<li>Use &quot;Add or Remove Programs&quot; in the Windows Settings</li>
+<li>Or run the uninstaller from the installation directory</li>
+</ul>
+<h3 id="macos-2">macOS</h3>
+<ul>
+<li>Drag the application from the Applications folder to the Trash</li>
+<li>Optionally run: <code>rm -rf ~/Library/Application\ Support/svg-to-gcode-converter/</code></li>
+</ul>
+<h3 id="linux-2">Linux</h3>
+<ul>
+<li>AppImage: Simply delete the AppImage file</li>
+<li>Debian/Ubuntu: <code>sudo apt remove svg-to-gcode-converter</code></li>
+<li>Fedora/RHEL: <code>sudo dnf remove svg-to-gcode-converter</code></li>
+</ul>
+<h2 id="getting-support">Getting Support</h2>
+<p>If you encounter any issues during installation:</p>
+<ol>
+<li>Check the <a href="#troubleshooting-installation-issues">Troubleshooting</a> section above</li>
+<li>Visit our <a href="https://github.com/svg-to-gcode/svg-to-gcode-converter/issues">GitHub Issues</a> page</li>
+<li>Join our community forum for support</li>
+<li>Contact support at <a href="mailto:&#x73;&#x75;&#x70;&#x70;&#x6f;&#x72;&#116;&#64;&#x73;&#118;&#x67;&#x74;&#111;&#x67;&#x63;&#x6f;&#100;&#101;&#46;&#99;&#x6f;&#109;">&#x73;&#x75;&#x70;&#x70;&#x6f;&#x72;&#116;&#64;&#x73;&#118;&#x67;&#x74;&#111;&#x67;&#x63;&#x6f;&#100;&#101;&#46;&#99;&#x6f;&#109;</a></li>
+</ol>
+
+  </div>
+</body>
+</html>

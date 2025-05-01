@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SVG to GCode Converter - Technology Stack - SVG to GCode Converter</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: 'default',
+        securityLevel: 'loose',
+        flowchart: { 
+          useMaxWidth: true,
+          htmlLabels: true
+        }
+      });
+
+      // Add active class to current page link
+      const currentPage = window.location.pathname.split('/').pop();
+      const navLinks = document.querySelectorAll('.nav-links a');
+      navLinks.forEach(link => {
+        const linkHref = link.getAttribute('href');
+        if (linkHref === currentPage || (currentPage === 'index.html' && linkHref === 'README.html')) {
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+  
+  <div class="mobile-nav">
+    <a href="index.html">Home</a>
+    <a href="installation_guide.html">Installation</a>
+    <a href="user_guide.html">User Guide</a>
+    <a href="developer_guide.html">For Developers</a>
+  </div>
+  
+  
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>SVG to GCode Converter</h2>
+      <p>Documentation</p>
+    </div>
+  
+    <div class="nav-section">
+      <div class="nav-section-title">Getting Started</div>
+      <ul class="nav-links">
+    <li><a href="README.html">Documentation Overview</a></li><li><a href="project_description.html">Project Overview</a></li><li><a href="installation_guide.html">Installation Guide</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">User Documentation</div>
+      <ul class="nav-links">
+    <li><a href="user_guide.html">User Guide</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">Technical Documentation</div>
+      <ul class="nav-links">
+    <li><a href="architecture_design.html">Architecture Design</a></li><li><a href="technical_specification.html">Technical Specification</a></li><li><a href="technology_stack.html" class="active">Technology Stack</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">Developer Documentation</div>
+      <ul class="nav-links">
+    <li><a href="developer_guide.html">Developer Guide</a></li><li><a href="implementation_steps.html">Implementation Steps</a></li><li><a href="codebase_improvements.html">Codebase Improvements</a></li><li><a href="assessment_checklists.html">Assessment Checklists</a></li>
+      </ul>
+    </div>
+    </div>
+  <div class="main-content">
+    <h1 id="svg-to-gcode-converter---technology-stack">SVG to GCode Converter - Technology Stack</h1>
+<h2 id="overview">Overview</h2>
+<p>This document outlines the technology stack currently used in the SVG to GCode Converter application. It provides a reference for the current implementation and context for future enhancements.</p>
+<h2 id="current-technology-stack">Current Technology Stack</h2>
+<h3 id="programming-language--runtime">Programming Language &amp; Runtime</h3>
+<ul>
+<li><strong>JavaScript</strong>: Core language used throughout the application</li>
+<li><strong>Node.js</strong>: Runtime environment for the application</li>
+<li><strong>Electron</strong>: Framework for creating the desktop application</li>
+</ul>
+<h3 id="user-interface">User Interface</h3>
+<ul>
+<li><strong>HTML/CSS/JavaScript</strong>: Standard web technologies for the UI</li>
+<li><strong>Electron</strong>: Provides the desktop application framework</li>
+<li><strong>DOM manipulation</strong>: Used for visualization and UI updates</li>
+</ul>
+<h3 id="svg-processing">SVG Processing</h3>
+<ul>
+<li><strong>svg-parser</strong>: Library for SVG parsing and extraction</li>
+<li><strong>svgpath</strong>: Library for SVG path manipulation</li>
+<li><strong>JSDOM</strong>: For DOM manipulation and SVG processing</li>
+<li><strong>Bezier.js</strong>: For Bézier curve manipulation and path processing</li>
+</ul>
+<h3 id="gcode-generation">GCode Generation</h3>
+<ul>
+<li><strong>Custom GCode generator</strong>: Built in-house to maintain control over GCode quality and optimization</li>
+<li><strong>GRBL-specific optimizations</strong>: Tailored for compatibility with GRBL controllers</li>
+</ul>
+<h3 id="data-persistence">Data Persistence</h3>
+<ul>
+<li><strong>Electron Store</strong>: For saving application configuration and user preferences</li>
+<li><strong>JSON</strong>: Used for serializing and storing conversion configurations</li>
+</ul>
+<h2 id="current-implementation-structure">Current Implementation Structure</h2>
+<h3 id="architecture-pattern">Architecture Pattern</h3>
+<ul>
+<li><strong>Monolithic Processing</strong>: Central SVGProcessor class handles most core functionality</li>
+<li><strong>Module-based organization</strong>: Some functionality is separated into modules (GCode, Path Generation)</li>
+</ul>
+<h3 id="file-organization">File Organization</h3>
+<ul>
+<li><strong>src/</strong>: Main source directory<ul>
+<li><strong>svg-processor.js</strong>: Core processing component</li>
+<li><strong>index.js</strong>: Main application entry point</li>
+<li><strong>update-manager.js</strong>: Update management</li>
+<li><strong>parser/</strong>: SVG parsing modules</li>
+<li><strong>processor/</strong>: Processing utilities</li>
+<li><strong>toolpath/</strong>: Toolpath generation</li>
+<li><strong>gcode/</strong>: GCode generation</li>
+<li><strong>visualization/</strong>: Visualization utilities</li>
+<li><strong>ui/</strong>: User interface components</li>
+<li><strong>models/</strong>: Data models</li>
+<li><strong>utils/</strong>: Utility functions</li>
+</ul>
+</li>
+</ul>
+<h3 id="performance-considerations">Performance Considerations</h3>
+<ul>
+<li><strong>Efficient path processing</strong>: Implemented in the SVG processor</li>
+<li><strong>Optimized toolpath generation</strong>: For better machining results</li>
+<li><strong>Progress callbacks</strong>: To provide feedback during processing</li>
+</ul>
+<h3 id="error-handling">Error Handling</h3>
+<ul>
+<li><strong>Try-catch blocks</strong>: For error handling in processing methods</li>
+<li><strong>Console logging</strong>: For debugging and error reporting</li>
+<li><strong>Dialog boxes</strong>: For user-facing error messages</li>
+</ul>
+<h2 id="external-dependencies">External Dependencies</h2>
+<table>
+<thead>
+<tr>
+<th>Dependency</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>electron</td>
+<td>Desktop application framework</td>
+</tr>
+<tr>
+<td>svg-parser</td>
+<td>SVG parsing and manipulation</td>
+</tr>
+<tr>
+<td>svgpath</td>
+<td>SVG path manipulation</td>
+</tr>
+<tr>
+<td>bezier-js</td>
+<td>Bézier curve manipulation</td>
+</tr>
+<tr>
+<td>jsdom</td>
+<td>DOM manipulation for SVG processing</td>
+</tr>
+<tr>
+<td>color-convert</td>
+<td>Color processing for grayscale mapping</td>
+</tr>
+<tr>
+<td>electron-log</td>
+<td>Logging</td>
+</tr>
+<tr>
+<td>electron-builder</td>
+<td>Application packaging</td>
+</tr>
+<tr>
+<td>electron-updater</td>
+<td>Update management</td>
+</tr>
+</tbody></table>
+<h2 id="development-environment">Development Environment</h2>
+<h3 id="required-tools">Required Tools</h3>
+<ul>
+<li><strong>Node.js</strong>: v14.x or higher</li>
+<li><strong>npm</strong>: v7.x or higher</li>
+<li><strong>Git</strong>: For version control</li>
+<li><strong>Any code editor</strong>: Visual Studio Code recommended</li>
+</ul>
+<h3 id="development-workflow">Development Workflow</h3>
+<ol>
+<li>Local development using Electron&#39;s development mode (<code>npm run dev</code>)</li>
+<li>Testing with built-in test scripts</li>
+<li>Packaging for different platforms (<code>npm run package-win</code>, <code>npm run package-mac</code>, etc.)</li>
+</ol>
+<h2 id="future-technology-considerations">Future Technology Considerations</h2>
+<p>The following technologies were originally planned but not yet implemented:</p>
+<h3 id="planned-future-technologies">Planned Future Technologies</h3>
+<ul>
+<li><strong>TypeScript</strong>: For strong typing and improved code quality</li>
+<li><strong>React</strong>: For a more structured and component-based UI</li>
+<li><strong>Tailwind CSS</strong>: For improved styling</li>
+<li><strong>Three.js/React Three Fiber</strong>: For 3D visualization</li>
+<li><strong>Web Workers</strong>: For improved performance with background processing</li>
+</ul>
+<h2 id="rationale-for-current-technologies">Rationale for Current Technologies</h2>
+<h3 id="svg-processing-libraries">SVG Processing Libraries</h3>
+<p>The current implementation uses a combination of svg-parser, svgpath, and custom processing to handle SVG parsing and transformation. These libraries provide the necessary functionality for extracting paths and attributes from SVG files.</p>
+<h3 id="electron-for-desktop-application">Electron for Desktop Application</h3>
+<p>Electron provides cross-platform compatibility and native file system access, which is essential for loading SVGs and saving GCode files. It also enables offline operation, which is a key requirement for workshop environments.</p>
+<h3 id="custom-gcode-generation">Custom GCode Generation</h3>
+<p>The custom GCode generation ensures complete control over the output quality and optimization specifically for GRBL controllers. It allows for tailored commands based on path characteristics and depth information.</p>
+<h3 id="development-tools">Development Tools</h3>
+<p>The current build and packaging tools provide the necessary functionality for creating distributable applications for multiple platforms. Electron-builder simplifies the packaging process, and electron-updater provides update management capabilities. </p>
+
+  </div>
+</body>
+</html>

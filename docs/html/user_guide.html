@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SVG to GCode Converter User Guide - SVG to GCode Converter</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: 'default',
+        securityLevel: 'loose',
+        flowchart: { 
+          useMaxWidth: true,
+          htmlLabels: true
+        }
+      });
+
+      // Add active class to current page link
+      const currentPage = window.location.pathname.split('/').pop();
+      const navLinks = document.querySelectorAll('.nav-links a');
+      navLinks.forEach(link => {
+        const linkHref = link.getAttribute('href');
+        if (linkHref === currentPage || (currentPage === 'index.html' && linkHref === 'README.html')) {
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+  
+  <div class="mobile-nav">
+    <a href="index.html">Home</a>
+    <a href="installation_guide.html">Installation</a>
+    <a href="user_guide.html">User Guide</a>
+    <a href="developer_guide.html">For Developers</a>
+  </div>
+  
+  
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>SVG to GCode Converter</h2>
+      <p>Documentation</p>
+    </div>
+  
+    <div class="nav-section">
+      <div class="nav-section-title">Getting Started</div>
+      <ul class="nav-links">
+    <li><a href="README.html">Documentation Overview</a></li><li><a href="project_description.html">Project Overview</a></li><li><a href="installation_guide.html">Installation Guide</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">User Documentation</div>
+      <ul class="nav-links">
+    <li><a href="user_guide.html" class="active">User Guide</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">Technical Documentation</div>
+      <ul class="nav-links">
+    <li><a href="architecture_design.html">Architecture Design</a></li><li><a href="technical_specification.html">Technical Specification</a></li><li><a href="technology_stack.html">Technology Stack</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">Developer Documentation</div>
+      <ul class="nav-links">
+    <li><a href="developer_guide.html">Developer Guide</a></li><li><a href="implementation_steps.html">Implementation Steps</a></li><li><a href="codebase_improvements.html">Codebase Improvements</a></li><li><a href="assessment_checklists.html">Assessment Checklists</a></li>
+      </ul>
+    </div>
+    </div>
+  <div class="main-content">
+    <h1 id="svg-to-gcode-converter-user-guide">SVG to GCode Converter User Guide</h1>
+<h2 id="introduction">Introduction</h2>
+<p>The SVG to GCode Converter is a powerful application that transforms vector graphics in SVG format into machine-readable GCode for CNC machines, laser cutters, and engravers. It specializes in grayscale-to-depth mapping, allowing you to easily convert shaded SVG images into 3D engravings.</p>
+<h2 id="installation">Installation</h2>
+<h3 id="system-requirements">System Requirements</h3>
+<ul>
+<li>Operating System: Windows 10/11, macOS 10.14+, or Linux (Ubuntu 18.04+ recommended)</li>
+<li>RAM: 4GB minimum, 8GB recommended for large SVG files</li>
+<li>Disk Space: 200MB</li>
+</ul>
+<h3 id="installation-steps">Installation Steps</h3>
+<h4 id="windows">Windows</h4>
+<ol>
+<li>Download the installer from the releases page</li>
+<li>Run the <code>.exe</code> installer and follow the on-screen instructions</li>
+<li>Launch the application from the Start menu or desktop shortcut</li>
+</ol>
+<h4 id="macos">macOS</h4>
+<ol>
+<li>Download the <code>.dmg</code> file from the releases page</li>
+<li>Open the <code>.dmg</code> file and drag the application to your Applications folder</li>
+<li>Launch from the Applications folder or Dock</li>
+</ol>
+<h4 id="linux">Linux</h4>
+<ol>
+<li>Download the <code>.AppImage</code> or distribution-specific package (<code>.deb</code>, <code>.rpm</code>)</li>
+<li>Make the AppImage executable: <code>chmod +x SVGtoGCode.AppImage</code></li>
+<li>Run the application: <code>./SVGtoGCode.AppImage</code></li>
+</ol>
+<h2 id="quick-start-guide">Quick Start Guide</h2>
+<p>This quick start guide will help you get up and running with the SVG to GCode Converter in just a few minutes.</p>
+<h3 id="prerequisites">Prerequisites</h3>
+<p>Before starting, ensure you have:</p>
+<ul>
+<li>Installed the SVG to GCode Converter (see <a href="installation_guide.md">Installation Guide</a>)</li>
+<li>A prepared SVG file you want to convert</li>
+<li>Knowledge of your CNC machine&#39;s specifications</li>
+</ul>
+<h3 id="step-1-launch-the-application">Step 1: Launch the Application</h3>
+<ol>
+<li>Start the SVG to GCode Converter application from your desktop shortcut or applications menu</li>
+<li>The main interface will open, showing the file loader panel</li>
+</ol>
+<h3 id="step-2-load-your-svg-file">Step 2: Load Your SVG File</h3>
+<ol>
+<li>Click the &quot;Open SVG&quot; button in the toolbar or use File → Open from the menu</li>
+<li>Browse to and select your SVG file</li>
+<li>The SVG will be loaded and displayed in the preview area</li>
+</ol>
+<h3 id="step-3-configure-grayscale-to-depth-settings">Step 3: Configure Grayscale-to-Depth Settings</h3>
+<ol>
+<li>In the settings panel on the right, locate the &quot;Grayscale Mapping&quot; section</li>
+<li>Set your preferred depth mapping:<ul>
+<li>Minimum Depth: The depth (Z-axis) for white (or lightest grayscale)</li>
+<li>Maximum Depth: The depth for black (or darkest grayscale)</li>
+<li>Mapping Curve: Linear, Logarithmic, or Custom</li>
+</ul>
+</li>
+</ol>
+<h3 id="step-4-configure-machine-settings">Step 4: Configure Machine Settings</h3>
+<ol>
+<li>In the &quot;Machine Settings&quot; section:<ul>
+<li>Set Feed Rate: The speed for X/Y movement (e.g., 1000 mm/min)</li>
+<li>Set Plunge Rate: The speed for Z-axis movement (e.g., 300 mm/min)</li>
+<li>Configure other machine-specific parameters</li>
+</ul>
+</li>
+</ol>
+<h3 id="step-5-generate-and-preview-gcode">Step 5: Generate and Preview GCode</h3>
+<ol>
+<li>Click the &quot;Generate GCode&quot; button</li>
+<li>The application will process the SVG and display a preview of the toolpaths</li>
+<li>The color-coded preview shows the depth levels with a scale on the right</li>
+<li>Estimated machining time will be displayed at the bottom</li>
+</ol>
+<h3 id="step-6-save-gcode">Step 6: Save GCode</h3>
+<ol>
+<li>When satisfied with the preview, click &quot;Save GCode&quot; or use File → Save GCode</li>
+<li>Choose a location to save the .gcode or .nc file</li>
+<li>The file is now ready to be loaded on your CNC machine</li>
+</ol>
+<h3 id="step-7-run-on-your-cnc-machine">Step 7: Run on Your CNC Machine</h3>
+<ol>
+<li>Transfer the GCode file to your CNC controller</li>
+<li>Set up your machine according to your normal workflow</li>
+<li>Run the GCode using your machine control software</li>
+</ol>
+<h2 id="interface-overview">Interface Overview</h2>
+<p>The application interface consists of the following main areas:</p>
+<ul>
+<li><strong>File Operations Panel</strong>: Open SVG files and save GCode output</li>
+<li><strong>SVG Preview</strong>: View your imported SVG file</li>
+<li><strong>Configuration Panel</strong>: Customize conversion settings</li>
+<li><strong>Toolpath Visualization</strong>: Preview the generated toolpath</li>
+<li><strong>Console Output</strong>: View processing logs and messages</li>
+</ul>
+<h2 id="settings-and-configuration">Settings and Configuration</h2>
+<h3 id="basic-settings">Basic Settings</h3>
+<ul>
+<li><strong>Cutting Depth</strong>: Set the maximum depth of the engraving</li>
+<li><strong>Safe Height</strong>: Set the height at which the tool moves when not cutting</li>
+<li><strong>Feed Rate</strong>: Set the speed at which the tool moves during cutting</li>
+<li><strong>Plunge Rate</strong>: Set the speed at which the tool moves vertically</li>
+</ul>
+<h3 id="grayscale-mapping">Grayscale Mapping</h3>
+<ul>
+<li><strong>Min Depth</strong>: The depth corresponding to white (or lightest color)</li>
+<li><strong>Max Depth</strong>: The depth corresponding to black (or darkest color)</li>
+<li><strong>Invert Mapping</strong>: Swap depth mapping (light colors become deep cuts and vice versa)</li>
+<li><strong>Grayscale Algorithm</strong>: Choose how colors are converted to grayscale (Luminosity, Average, etc.)</li>
+</ul>
+<h3 id="machine-settings">Machine Settings</h3>
+<ul>
+<li><strong>Machine Type</strong>: Select from predefined machine profiles or create your own</li>
+<li><strong>GCode Flavor</strong>: Choose the GCode dialect for your machine (GRBL, Marlin, Mach3, Fanuc, LinuxCNC)</li>
+<li><strong>Tool Diameter</strong>: Set the diameter of your cutting tool</li>
+<li><strong>Work Area</strong>: Define the maximum work area of your machine</li>
+</ul>
+<h3 id="toolpath-settings">Toolpath Settings</h3>
+<ul>
+<li><strong>Path Optimization</strong>: Enable/disable path optimization algorithms</li>
+<li><strong>Smoothing</strong>: Apply smoothing to reduce jerky movements</li>
+<li><strong>Constant Z</strong>: Keep Z-height constant within each path</li>
+<li><strong>Safety Height Transitions</strong>: Configure how the tool transitions between cuts</li>
+</ul>
+<h2 id="advanced-features">Advanced Features</h2>
+<h3 id="svg-processing-options">SVG Processing Options</h3>
+<ul>
+<li><strong>Large File Handling</strong>: Special processing for very large SVG files</li>
+<li><strong>Layer Support</strong>: Process specific layers from multi-layer SVG files</li>
+<li><strong>Path Simplification</strong>: Reduce point count while preserving shape fidelity</li>
+</ul>
+<h3 id="custom-gcode">Custom GCode</h3>
+<ul>
+<li><strong>Custom Header</strong>: Add custom GCode at the beginning of the file</li>
+<li><strong>Custom Footer</strong>: Add custom GCode at the end of the file</li>
+<li><strong>Custom Tool Changes</strong>: Configure tool change operations</li>
+</ul>
+<h3 id="batch-processing">Batch Processing</h3>
+<p>For processing multiple files:</p>
+<ol>
+<li>Click the &quot;Batch Process&quot; button in the main interface</li>
+<li>Select multiple SVG files or a folder containing SVG files</li>
+<li>Configure common settings for all files</li>
+<li>Click &quot;Process All&quot; to generate GCode for each file</li>
+</ol>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="common-issues">Common Issues</h3>
+<ul>
+<li><strong>SVG File Not Loading</strong>: Ensure your SVG file is valid and conforms to SVG standards</li>
+<li><strong>Unexpected Toolpaths</strong>: Check if your SVG has overlapping paths or unsupported elements</li>
+<li><strong>Performance Issues</strong>: For large files, try enabling the &quot;Optimize for large files&quot; option</li>
+</ul>
+<h3 id="error-messages">Error Messages</h3>
+<ul>
+<li><strong>&quot;Invalid SVG&quot;</strong>: The file is not a valid SVG file or contains unsupported elements</li>
+<li><strong>&quot;Path Processing Error&quot;</strong>: Problem encountered when processing specific SVG paths</li>
+<li><strong>&quot;Memory Limit Exceeded&quot;</strong>: File is too large for available memory</li>
+</ul>
+<h3 id="getting-help">Getting Help</h3>
+<p>If you encounter issues not covered in this guide:</p>
+<ol>
+<li>Check the FAQ section on our website</li>
+<li>Review the issue tracker on GitHub</li>
+<li>Join our community forum for support</li>
+<li>Contact support at <a href="mailto:&#x73;&#x75;&#112;&#112;&#x6f;&#x72;&#116;&#x40;&#x73;&#x76;&#x67;&#x74;&#111;&#103;&#x63;&#111;&#x64;&#101;&#46;&#x63;&#x6f;&#109;">&#x73;&#x75;&#112;&#112;&#x6f;&#x72;&#116;&#x40;&#x73;&#x76;&#x67;&#x74;&#111;&#103;&#x63;&#111;&#x64;&#101;&#46;&#x63;&#x6f;&#109;</a></li>
+</ol>
+<h2 id="keyboard-shortcuts">Keyboard Shortcuts</h2>
+<ul>
+<li><strong>Ctrl+O</strong>: Open SVG file</li>
+<li><strong>Ctrl+S</strong>: Save GCode</li>
+<li><strong>Ctrl+G</strong>: Generate GCode</li>
+<li><strong>Ctrl+P</strong>: Preview toolpath</li>
+<li><strong>Ctrl+Z</strong>: Undo</li>
+<li><strong>Ctrl+Shift+Z</strong>: Redo</li>
+<li><strong>F1</strong>: Open this help documentation</li>
+</ul>
+<h2 id="best-practices">Best Practices</h2>
+<ul>
+<li>Use vector graphics software (Inkscape, Adobe Illustrator) to prepare your SVG files</li>
+<li>Simplify complex paths before importing</li>
+<li>Use grayscale colors to define depth variations</li>
+<li>Test with small files before processing large or complex designs</li>
+<li>Back up your machine settings and configurations regularly</li>
+</ul>
+<h2 id="license-and-legal-information">License and Legal Information</h2>
+<p>This software is distributed under the MIT License. See the LICENSE file for more details.</p>
+<p>Copyright (c) 2023 SVG to GCode Converter Team</p>
+<h2 id="tutorials">Tutorials</h2>
+<h3 id="tutorial-1-converting-a-logo-to-3d-relief">Tutorial 1: Converting a Logo to 3D Relief</h3>
+<p>This tutorial demonstrates how to convert a grayscale logo to a 3D relief carving.</p>
+<h4 id="preparation">Preparation</h4>
+<ol>
+<li>Create a logo in your preferred graphic design software</li>
+<li>Use grayscale shading to indicate depth (darker = deeper)</li>
+<li>Export as SVG format</li>
+<li>Ensure the dimensions match your intended physical size</li>
+</ol>
+<h4 id="conversion-steps">Conversion Steps</h4>
+<ol>
+<li>Load the SVG in the converter</li>
+<li>Set cutting depth range (e.g., 0mm to 5mm)</li>
+<li>Choose your preferred curve mapping (try logarithmic for softer transitions)</li>
+<li>Set appropriate feed and plunge rates for your material</li>
+<li>Generate the GCode and preview</li>
+<li>Make adjustments if needed</li>
+<li>Save the final GCode</li>
+</ol>
+<h4 id="machining-tips">Machining Tips</h4>
+<ul>
+<li>Use a ball-nose end mill for smooth transitions between depths</li>
+<li>Secure your material firmly to prevent movement during carving</li>
+<li>Consider a finishing pass at a slower feed rate for smoother results</li>
+</ul>
+<h3 id="tutorial-2-creating-multi-level-engravings">Tutorial 2: Creating Multi-Level Engravings</h3>
+<p>Learn how to create engravings with distinct depth levels using grayscale values.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="general-questions">General Questions</h3>
+<p><strong>Q: What type of SVG files work best with this converter?</strong><br>A: The converter works best with SVG files that use grayscale colors to indicate depth. Vector paths with solid grayscale fills or grayscale strokes will be interpreted correctly. Complex gradients may be simplified during conversion.</p>
+<p><strong>Q: Can I use color SVGs instead of grayscale?</strong><br>A: Yes, but colors will be converted to their grayscale equivalents. For precise depth control, using grayscale in your original design is recommended.</p>
+<p><strong>Q: What&#39;s the maximum file size the converter can handle?</strong><br>A: The converter can handle SVG files up to 50MB, but performance may decrease with very large or complex files. For optimal performance, keep files under 10MB.</p>
+<p><strong>Q: Does the converter work offline?</strong><br>A: Yes, the SVG to GCode Converter works completely offline. No internet connection is required for conversion.</p>
+<h3 id="technical-questions">Technical Questions</h3>
+<p><strong>Q: What CNC controllers are supported?</strong><br>A: The converter is optimized for GRBL controllers, but the GCode output is compatible with most hobby-grade CNC controllers including Mach3, LinuxCNC, and many others.</p>
+<p><strong>Q: How is the depth mapping calculated?</strong><br>A: Grayscale values (0-255) are mapped to depths between your minimum and maximum settings. By default, white (255) corresponds to minimum depth, and black (0) to maximum depth. The mapping curve determines how intermediate values are interpreted.</p>
+<p><strong>Q: Can I use the converter for laser engraving?</strong><br>A: Yes, you can configure the output for laser engraving by setting appropriate parameters. In the machine settings, enable the &quot;Laser Mode&quot; option, which will convert grayscale to laser power levels instead of depth.</p>
+<p><strong>Q: How do I increase the accuracy of small details?</strong><br>A: For small details, consider adjusting the &quot;Resolution&quot; setting in the advanced options. A higher resolution preserves more detail but generates larger GCode files and potentially longer machining time.</p>
+<h3 id="troubleshooting-1">Troubleshooting</h3>
+<p><strong>Q: Why are my circles appearing as polygons in the preview?</strong><br>A: SVG circles are approximated using line segments. You can increase the &quot;Circle Approximation Quality&quot; in the settings to improve the smoothness of circles and arcs.</p>
+<p><strong>Q: The converter is running very slowly with my file. How can I improve performance?</strong><br>A: Try simplifying your SVG by reducing the number of paths or points. Many vector editing programs offer path simplification options. Also, check for unnecessarily complex elements that could be simplified.</p>
+<p><strong>Q: My GCode file seems too large. How can I optimize it?</strong><br>A: Enable the &quot;Optimize GCode&quot; option in the export settings. This will reduce file size by combining colinear movements and removing redundant commands. You can also try reducing the &quot;Path Precision&quot; setting, which affects how precisely curves are approximated.</p>
+<p><strong>Q: Why are some parts of my SVG being ignored in the conversion?</strong><br>A: Check that all elements in your SVG have grayscale fill or stroke values. Elements without color information or with non-standard SVG attributes might be ignored. Also, very thin lines or tiny details below the &quot;Minimum Feature Size&quot; setting will be filtered out. </p>
+
+  </div>
+</body>
+</html>

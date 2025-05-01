@@ -28,14 +28,61 @@ The SVG to GCode Converter is a powerful application that transforms vector grap
 2. Make the AppImage executable: `chmod +x SVGtoGCode.AppImage`
 3. Run the application: `./SVGtoGCode.AppImage`
 
-## Quick Start
+## Quick Start Guide
 
-1. Launch the SVG to GCode Converter
-2. Click the "Open SVG" button to select your SVG file
-3. Adjust settings in the configuration panel as needed
-4. Click "Generate GCode" to process your file
-5. Preview the generated toolpath in the visualization panel
-6. Save the generated GCode using the "Save GCode" button
+This quick start guide will help you get up and running with the SVG to GCode Converter in just a few minutes.
+
+### Prerequisites
+
+Before starting, ensure you have:
+- Installed the SVG to GCode Converter (see [Installation Guide](installation_guide.md))
+- A prepared SVG file you want to convert
+- Knowledge of your CNC machine's specifications
+
+### Step 1: Launch the Application
+
+1. Start the SVG to GCode Converter application from your desktop shortcut or applications menu
+2. The main interface will open, showing the file loader panel
+
+### Step 2: Load Your SVG File
+
+1. Click the "Open SVG" button in the toolbar or use File → Open from the menu
+2. Browse to and select your SVG file
+3. The SVG will be loaded and displayed in the preview area
+
+### Step 3: Configure Grayscale-to-Depth Settings
+
+1. In the settings panel on the right, locate the "Grayscale Mapping" section
+2. Set your preferred depth mapping:
+   - Minimum Depth: The depth (Z-axis) for white (or lightest grayscale)
+   - Maximum Depth: The depth for black (or darkest grayscale)
+   - Mapping Curve: Linear, Logarithmic, or Custom
+
+### Step 4: Configure Machine Settings
+
+1. In the "Machine Settings" section:
+   - Set Feed Rate: The speed for X/Y movement (e.g., 1000 mm/min)
+   - Set Plunge Rate: The speed for Z-axis movement (e.g., 300 mm/min)
+   - Configure other machine-specific parameters
+
+### Step 5: Generate and Preview GCode
+
+1. Click the "Generate GCode" button
+2. The application will process the SVG and display a preview of the toolpaths
+3. The color-coded preview shows the depth levels with a scale on the right
+4. Estimated machining time will be displayed at the bottom
+
+### Step 6: Save GCode
+
+1. When satisfied with the preview, click "Save GCode" or use File → Save GCode
+2. Choose a location to save the .gcode or .nc file
+3. The file is now ready to be loaded on your CNC machine
+
+### Step 7: Run on Your CNC Machine
+
+1. Transfer the GCode file to your CNC controller
+2. Set up your machine according to your normal workflow
+3. Run the GCode using your machine control software
 
 ## Interface Overview
 
@@ -145,4 +192,78 @@ If you encounter issues not covered in this guide:
 
 This software is distributed under the MIT License. See the LICENSE file for more details.
 
-Copyright (c) 2023 SVG to GCode Converter Team 
+Copyright (c) 2023 SVG to GCode Converter Team
+
+## Tutorials
+
+### Tutorial 1: Converting a Logo to 3D Relief
+
+This tutorial demonstrates how to convert a grayscale logo to a 3D relief carving.
+
+#### Preparation
+1. Create a logo in your preferred graphic design software
+2. Use grayscale shading to indicate depth (darker = deeper)
+3. Export as SVG format
+4. Ensure the dimensions match your intended physical size
+
+#### Conversion Steps
+1. Load the SVG in the converter
+2. Set cutting depth range (e.g., 0mm to 5mm)
+3. Choose your preferred curve mapping (try logarithmic for softer transitions)
+4. Set appropriate feed and plunge rates for your material
+5. Generate the GCode and preview
+6. Make adjustments if needed
+7. Save the final GCode
+
+#### Machining Tips
+- Use a ball-nose end mill for smooth transitions between depths
+- Secure your material firmly to prevent movement during carving
+- Consider a finishing pass at a slower feed rate for smoother results
+
+### Tutorial 2: Creating Multi-Level Engravings
+
+Learn how to create engravings with distinct depth levels using grayscale values.
+
+## Frequently Asked Questions
+
+### General Questions
+
+**Q: What type of SVG files work best with this converter?**  
+A: The converter works best with SVG files that use grayscale colors to indicate depth. Vector paths with solid grayscale fills or grayscale strokes will be interpreted correctly. Complex gradients may be simplified during conversion.
+
+**Q: Can I use color SVGs instead of grayscale?**  
+A: Yes, but colors will be converted to their grayscale equivalents. For precise depth control, using grayscale in your original design is recommended.
+
+**Q: What's the maximum file size the converter can handle?**  
+A: The converter can handle SVG files up to 50MB, but performance may decrease with very large or complex files. For optimal performance, keep files under 10MB.
+
+**Q: Does the converter work offline?**  
+A: Yes, the SVG to GCode Converter works completely offline. No internet connection is required for conversion.
+
+### Technical Questions
+
+**Q: What CNC controllers are supported?**  
+A: The converter is optimized for GRBL controllers, but the GCode output is compatible with most hobby-grade CNC controllers including Mach3, LinuxCNC, and many others.
+
+**Q: How is the depth mapping calculated?**  
+A: Grayscale values (0-255) are mapped to depths between your minimum and maximum settings. By default, white (255) corresponds to minimum depth, and black (0) to maximum depth. The mapping curve determines how intermediate values are interpreted.
+
+**Q: Can I use the converter for laser engraving?**  
+A: Yes, you can configure the output for laser engraving by setting appropriate parameters. In the machine settings, enable the "Laser Mode" option, which will convert grayscale to laser power levels instead of depth.
+
+**Q: How do I increase the accuracy of small details?**  
+A: For small details, consider adjusting the "Resolution" setting in the advanced options. A higher resolution preserves more detail but generates larger GCode files and potentially longer machining time.
+
+### Troubleshooting
+
+**Q: Why are my circles appearing as polygons in the preview?**  
+A: SVG circles are approximated using line segments. You can increase the "Circle Approximation Quality" in the settings to improve the smoothness of circles and arcs.
+
+**Q: The converter is running very slowly with my file. How can I improve performance?**  
+A: Try simplifying your SVG by reducing the number of paths or points. Many vector editing programs offer path simplification options. Also, check for unnecessarily complex elements that could be simplified.
+
+**Q: My GCode file seems too large. How can I optimize it?**  
+A: Enable the "Optimize GCode" option in the export settings. This will reduce file size by combining colinear movements and removing redundant commands. You can also try reducing the "Path Precision" setting, which affects how precisely curves are approximated.
+
+**Q: Why are some parts of my SVG being ignored in the conversion?**  
+A: Check that all elements in your SVG have grayscale fill or stroke values. Elements without color information or with non-standard SVG attributes might be ignored. Also, very thin lines or tiny details below the "Minimum Feature Size" setting will be filtered out. 

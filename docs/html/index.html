@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SVG to GCode Converter - Documentation</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: 'default',
+        securityLevel: 'loose',
+        flowchart: { 
+          useMaxWidth: true,
+          htmlLabels: true
+        }
+      });
+
+      // Add active class to current page link
+      const currentPage = window.location.pathname.split('/').pop();
+      const navLinks = document.querySelectorAll('.nav-links a');
+      navLinks.forEach(link => {
+        const linkHref = link.getAttribute('href');
+        if (linkHref === currentPage || (currentPage === 'index.html' && linkHref === 'README.html')) {
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+  <!-- Mobile Navigation -->
+  <div class="mobile-nav">
+    <a href="index.html">Home</a>
+    <a href="installation_guide.html">Installation</a>
+    <a href="user_guide.html">User Guide</a>
+    <a href="developer_guide.html">For Developers</a>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>SVG to GCode Converter</h2>
+      <p>Documentation</p>
+    </div>
+
+    <!-- Getting Started Section -->
+    <div class="nav-section">
+      <div class="nav-section-title">Getting Started</div>
+      <ul class="nav-links">
+        <li><a href="README.html">Documentation Overview</a></li>
+        <li><a href="project_description.html">Project Overview</a></li>
+        <li><a href="installation_guide.html">Installation Guide</a></li>
+      </ul>
+    </div>
+
+    <!-- User Documentation Section -->
+    <div class="nav-section">
+      <div class="nav-section-title">User Documentation</div>
+      <ul class="nav-links">
+        <li><a href="user_guide.html">User Guide</a></li>
+      </ul>
+    </div>
+
+    <!-- Technical Documentation Section -->
+    <div class="nav-section">
+      <div class="nav-section-title">Technical Documentation</div>
+      <ul class="nav-links">
+        <li><a href="architecture_design.html">Architecture Design</a></li>
+        <li><a href="technical_specification.html">Technical Specification</a></li>
+        <li><a href="technology_stack.html">Technology Stack</a></li>
+      </ul>
+    </div>
+
+    <!-- Developer Documentation Section -->
+    <div class="nav-section">
+      <div class="nav-section-title">Developer Documentation</div>
+      <ul class="nav-links">
+        <li><a href="developer_guide.html">Developer Guide</a></li>
+        <li><a href="implementation_steps.html">Implementation Steps</a></li>
+        <li><a href="codebase_improvements.html">Codebase Improvements</a></li>
+        <li><a href="assessment_checklists.html">Assessment Checklists</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <h1>SVG to GCode Converter Documentation</h1>
+    
+    <p>Welcome to the official documentation for the SVG to GCode Converter, a specialized software tool designed to transform vector graphics (SVG files) into machine-readable GCode instructions for CNC machines, with special support for grayscale-to-depth mapping.</p>
+
+    <div class="info-box">
+      <strong>Latest Version:</strong> v1.0.0 - This documentation covers all features available in the current release.
+    </div>
+
+    <h2>About This Project</h2>
+    <p>The SVG to GCode Converter is an open-source tool for hobbyist CNC users with GRBL controllers. It allows you to convert standard SVG vector files into optimized GCode, with the unique ability to interpret grayscale color values as depth (Z-axis) information.</p>
+
+    <h2>Getting Started</h2>
+    <p>New to SVG to GCode Converter? These resources will help you get up and running quickly:</p>
+    
+    <div class="mermaid">
+      graph LR
+        A[Install] --> B[Configure] --> C[Convert] --> D[Machine]
+        
+        style A fill:#3b82f6,stroke:#fff,color:#fff
+        style B fill:#4f46e5,stroke:#fff,color:#fff
+        style C fill:#2563eb,stroke:#fff,color:#fff
+        style D fill:#1d4ed8,stroke:#fff,color:#fff
+    </div>
+
+    <h3>Quick Links</h3>
+    <ul>
+      <li><a href="project_description.html">Learn about the project features and capabilities</a></li>
+      <li><a href="installation_guide.html">Install the application on your system</a></li>
+      <li><a href="user_guide.html#quick-start">Quick start guide to convert your first SVG file</a></li>
+    </ul>
+
+    <h2>Key Documentation Sections</h2>
+    
+    <h3>For Users</h3>
+    <p>Get the most out of the SVG to GCode Converter with these user-focused guides:</p>
+    <ul>
+      <li><a href="user_guide.html">Complete User Guide</a> - Instructions for using all features of the application</li>
+      <li><a href="user_guide.html#tutorials">Step-by-step Tutorials</a> - Learn by example with common conversion tasks</li>
+      <li><a href="user_guide.html#frequently-asked-questions">FAQ</a> - Answers to common questions</li>
+    </ul>
+
+    <h3>For Developers</h3>
+    <p>Looking to contribute or extend the SVG to GCode Converter? Check out these resources:</p>
+    <ul>
+      <li><a href="developer_guide.html">Developer Guide</a> - Guidelines for contributing to the project</li>
+      <li><a href="architecture_design.html">Architecture Design</a> - Learn about the system architecture and components</li>
+      <li><a href="technical_specification.html">Technical Specification</a> - Detailed API definitions and algorithms</li>
+    </ul>
+
+    <h2>Documentation Updates</h2>
+    <p>This documentation is regularly updated to reflect the latest changes in requirements, architecture, and implementation details. Check the <a href="https://github.com/svg-to-gcode/svg-to-gcode-converter" target="_blank">project repository</a> for the most up-to-date information.</p>
+  </div>
+</body>
+</html>

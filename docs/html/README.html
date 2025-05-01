@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SVG to GCode Converter Documentation - SVG to GCode Converter</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: 'default',
+        securityLevel: 'loose',
+        flowchart: { 
+          useMaxWidth: true,
+          htmlLabels: true
+        }
+      });
+
+      // Add active class to current page link
+      const currentPage = window.location.pathname.split('/').pop();
+      const navLinks = document.querySelectorAll('.nav-links a');
+      navLinks.forEach(link => {
+        const linkHref = link.getAttribute('href');
+        if (linkHref === currentPage || (currentPage === 'index.html' && linkHref === 'README.html')) {
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+  
+  <div class="mobile-nav">
+    <a href="index.html">Home</a>
+    <a href="installation_guide.html">Installation</a>
+    <a href="user_guide.html">User Guide</a>
+    <a href="developer_guide.html">For Developers</a>
+  </div>
+  
+  
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>SVG to GCode Converter</h2>
+      <p>Documentation</p>
+    </div>
+  
+    <div class="nav-section">
+      <div class="nav-section-title">Getting Started</div>
+      <ul class="nav-links">
+    <li><a href="README.html" class="active">Documentation Overview</a></li><li><a href="project_description.html">Project Overview</a></li><li><a href="installation_guide.html">Installation Guide</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">User Documentation</div>
+      <ul class="nav-links">
+    <li><a href="user_guide.html">User Guide</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">Technical Documentation</div>
+      <ul class="nav-links">
+    <li><a href="architecture_design.html">Architecture Design</a></li><li><a href="technical_specification.html">Technical Specification</a></li><li><a href="technology_stack.html">Technology Stack</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">Developer Documentation</div>
+      <ul class="nav-links">
+    <li><a href="developer_guide.html">Developer Guide</a></li><li><a href="implementation_steps.html">Implementation Steps</a></li><li><a href="codebase_improvements.html">Codebase Improvements</a></li><li><a href="assessment_checklists.html">Assessment Checklists</a></li>
+      </ul>
+    </div>
+    </div>
+  <div class="main-content">
+    <h1 id="svg-to-gcode-converter-documentation">SVG to GCode Converter Documentation</h1>
+<p>Welcome to the official documentation for the SVG to GCode Converter, an open-source tool designed to transform SVG vector graphics into GRBL-compatible GCode instructions, with special support for grayscale-to-depth mapping.</p>
+<h2 id="documentation-structure">Documentation Structure</h2>
+<h3 id="getting-started">Getting Started</h3>
+<ul>
+<li><a href="project_description.md">Project Overview</a> - Introduction to the project, its purpose and key features</li>
+<li><a href="installation_guide.md">Installation Guide</a> - Step-by-step instructions for installing the application</li>
+<li><a href="user_guide.md#quick-start">Quick Start Guide</a> - Get up and running quickly with essential operations</li>
+</ul>
+<h3 id="user-documentation">User Documentation</h3>
+<ul>
+<li><a href="user_guide.md">User Guide</a> - Comprehensive guide for using the application</li>
+<li><a href="user_guide.md#tutorials">Tutorials</a> - Step-by-step guides for common tasks</li>
+<li><a href="user_guide.md#frequently-asked-questions">FAQ</a> - Answers to common questions</li>
+</ul>
+<h3 id="technical-documentation">Technical Documentation</h3>
+<ul>
+<li><a href="architecture_design.md">Architecture Design</a> - System architecture, component design, and data flow</li>
+<li><a href="technical_specification.md">Technical Specification</a> - Detailed API definitions and algorithms</li>
+<li><a href="technology_stack.md">Technology Stack</a> - Languages, frameworks, and libraries used</li>
+</ul>
+<h3 id="developer-documentation">Developer Documentation</h3>
+<ul>
+<li><a href="developer_guide.md">Developer Guide</a> - Guide for developers contributing to the project</li>
+<li><a href="implementation_steps.md">Implementation Steps</a> - Step-by-step implementation guidance</li>
+<li><a href="codebase_improvements.md">Codebase Improvements</a> - Ongoing improvements and technical debt</li>
+<li><a href="assessment_checklists.md">Assessment Checklists</a> - Quality evaluation guides</li>
+</ul>
+<h2 id="view-documentation">View Documentation</h2>
+<h3 id="html-documentation">HTML Documentation</h3>
+<p>This repository includes a tool to generate an HTML version of this documentation with proper rendering of Mermaid diagrams:</p>
+<pre><code class="language-bash"># On Windows
+docs/tools/html-generator/generate-docs.bat
+
+# On macOS/Linux
+docs/tools/html-generator/generate-docs.sh
+</code></pre>
+<p>The generated HTML documentation will be available in the <code>docs/html</code> directory. Open <code>docs/html/index.html</code> in your browser to view it.</p>
+<h2 id="documentation-diagram">Documentation Diagram</h2>
+<div class="mermaid">graph TD
+    A[SVG to GCode Converter Docs] --> B[Getting Started]
+    A --> C[User Documentation]
+    A --> D[Technical Documentation]
+    A --> E[Developer Documentation]
+    
+    B --> B1[Project Overview]
+    B --> B2[Installation Guide]
+    B --> B3[Quick Start Guide]
+    
+    C --> C1[User Guide]
+    C --> C2[Tutorials]
+    C --> C3[FAQ]
+    
+    D --> D1[Architecture Design]
+    D --> D2[Technical Specification]
+    D --> D3[Technology Stack]
+    
+    E --> E1[Developer Guide]
+    E --> E2[Implementation Steps]
+    E --> E3[Codebase Improvements]
+    E --> E4[Assessment Checklists]
+    
+    classDef category fill:#4285F4,stroke:#fff,stroke-width:2px,color:#fff
+    classDef document fill:#34A853,stroke:#fff,stroke-width:2px,color:#fff
+    class A category
+    class B,C,D,E category
+    class B1,B2,B3,C1,C2,C3,D1,D2,D3,E1,E2,E3,E4 document</div><h2 id="contributing-to-documentation">Contributing to Documentation</h2>
+<p>We welcome contributions to improve this documentation. Please follow these guidelines:</p>
+<ol>
+<li>Use Markdown formatting for consistency</li>
+<li>Add Mermaid diagrams where visualization would be helpful</li>
+<li>Keep the language clear and accessible </li>
+<li>Follow the established structure</li>
+<li>Test all internal and external links</li>
+</ol>
+<p>To contribute, please submit a pull request with your changes.</p>
+<h2 id="documentation-updates">Documentation Updates</h2>
+<p>All documentation is regularly updated to reflect the latest changes in requirements, architecture, and implementation details. Check the repository for the most up-to-date information. </p>
+
+  </div>
+</body>
+</html>

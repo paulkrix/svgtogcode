@@ -2,104 +2,112 @@
 
 ## Overview
 
-This document outlines the technology decisions made for implementing the SVG to GCode Converter application. It serves as a reference for the development team and provides context for future maintenance and enhancements.
+This document outlines the technology stack currently used in the SVG to GCode Converter application. It provides a reference for the current implementation and context for future enhancements.
 
-## Core Technology Stack
+## Current Technology Stack
 
 ### Programming Language & Runtime
-- **TypeScript**: Chosen for strong typing, modern JavaScript features, and excellent tooling support
+- **JavaScript**: Core language used throughout the application
 - **Node.js**: Runtime environment for the application
-- **Electron**: Framework for creating cross-platform desktop applications with web technologies
+- **Electron**: Framework for creating the desktop application
 
-### Frontend
-- **React**: UI library for building the user interface components (See [User Interface in Architecture Design](architecture_design.md#7-user-interface))
-- **Tailwind CSS**: Utility-first CSS framework for styling
-- **React Three Fiber**: React renderer for Three.js, used for 3D visualization of toolpaths (See [Visualization Engine in Architecture Design](architecture_design.md#6-visualization-engine) and [Visualization API](technical_specification.md#6-visualization-api))
+### User Interface
+- **HTML/CSS/JavaScript**: Standard web technologies for the UI
+- **Electron**: Provides the desktop application framework
+- **DOM manipulation**: Used for visualization and UI updates
 
 ### SVG Processing
-- **SVG.js**: Library for SVG parsing and manipulation (See [SVG Parser in Architecture Design](architecture_design.md#2-svg-parser) and [SVG Parser API](technical_specification.md#2-svg-parser-api))
-- **Paper.js**: Vector graphics scripting framework for path processing (See [Path Processor in Architecture Design](architecture_design.md#3-path-processor) and [Path Processor API](technical_specification.md#3-path-processor-api))
-- **D3.js**: Used for advanced SVG manipulation and transformation
+- **svg-parser**: Library for SVG parsing and extraction
+- **svgpath**: Library for SVG path manipulation
+- **JSDOM**: For DOM manipulation and SVG processing
+- **Bezier.js**: For Bézier curve manipulation and path processing
 
 ### GCode Generation
-- **Custom GCode generator**: Built in-house to maintain control over GCode quality and optimization (See [GCode Generator in Architecture Design](architecture_design.md#5-gcode-generator) and [GCode Generator API](technical_specification.md#5-gcode-generator-api))
+- **Custom GCode generator**: Built in-house to maintain control over GCode quality and optimization
 - **GRBL-specific optimizations**: Tailored for compatibility with GRBL controllers
 
 ### Data Persistence
 - **Electron Store**: For saving application configuration and user preferences
 - **JSON**: Used for serializing and storing conversion configurations
 
-## Key Implementation Decisions
+## Current Implementation Structure
 
 ### Architecture Pattern
-- **Model-View-Controller (MVC)**: Separates concerns between data, user interface, and control logic
-- **Pipeline Processing**: Data flows through distinct processing stages with clear interfaces
+- **Monolithic Processing**: Central SVGProcessor class handles most core functionality
+- **Module-based organization**: Some functionality is separated into modules (GCode, Path Generation)
 
-### Performance Optimization
-- **Web Workers**: For CPU-intensive operations like path optimization
-- **Virtualized Rendering**: For efficient display of large path collections
-- **Incremental Processing**: Allows for partial processing of large files with progress feedback
+### File Organization
+- **src/**: Main source directory
+  - **svg-processor.js**: Core processing component
+  - **index.js**: Main application entry point
+  - **update-manager.js**: Update management
+  - **parser/**: SVG parsing modules
+  - **processor/**: Processing utilities
+  - **toolpath/**: Toolpath generation
+  - **gcode/**: GCode generation
+  - **visualization/**: Visualization utilities
+  - **ui/**: User interface components
+  - **models/**: Data models
+  - **utils/**: Utility functions
 
-### Testing Strategy
-- **Jest**: For unit and integration testing
-- **Testing Library**: For component testing
-- **Storybook**: For visual component development and testing
+### Performance Considerations
+- **Efficient path processing**: Implemented in the SVG processor
+- **Optimized toolpath generation**: For better machining results
+- **Progress callbacks**: To provide feedback during processing
 
-### Build & Packaging
-- **Webpack**: For bundling and optimizing application code
-- **Electron Forge**: For packaging and distributing the application
-- **GitHub Actions**: For CI/CD pipeline
-
-### Error Handling & Logging
-- **Centralized Error Handling**: Using custom error classes and middleware
-- **Winston**: For logging across the application
-- **Sentry**: For production error tracking
+### Error Handling
+- **Try-catch blocks**: For error handling in processing methods
+- **Console logging**: For debugging and error reporting
+- **Dialog boxes**: For user-facing error messages
 
 ## External Dependencies
 
-| Dependency | Version | Purpose |
-|------------|---------|---------|
-| typescript | ^4.9.5 | Static typing |
-| react | ^18.2.0 | UI components |
-| electron | ^26.0.0 | Desktop application framework |
-| svg.js | ^3.1.2 | SVG parsing and manipulation |
-| paper | ^0.12.17 | Vector graphics processing |
-| d3 | ^7.8.5 | Data visualization and transformations |
-| three | ^0.155.0 | 3D visualization |
-| @react-three/fiber | ^8.14.1 | React renderer for Three.js |
-| tailwindcss | ^3.3.3 | CSS utility framework |
-| electron-store | ^8.1.0 | Local storage solution |
-| jest | ^29.6.4 | Testing framework |
-| webpack | ^5.88.2 | Code bundling |
+| Dependency | Purpose |
+|------------|---------|
+| electron | Desktop application framework |
+| svg-parser | SVG parsing and manipulation |
+| svgpath | SVG path manipulation |
+| bezier-js | Bézier curve manipulation |
+| jsdom | DOM manipulation for SVG processing |
+| color-convert | Color processing for grayscale mapping |
+| electron-log | Logging |
+| electron-builder | Application packaging |
+| electron-updater | Update management |
 
 ## Development Environment
 
 ### Required Tools
-- **Node.js**: v18.x or higher
-- **npm**: v9.x or higher
+- **Node.js**: v14.x or higher
+- **npm**: v7.x or higher
 - **Git**: For version control
-- **Visual Studio Code**: Recommended IDE with following extensions:
-  - ESLint
-  - Prettier
-  - TypeScript ESLint
-  - Tailwind CSS IntelliSense
+- **Any code editor**: Visual Studio Code recommended
 
 ### Development Workflow
-1. Local development using Electron's development mode
-2. Unit testing runs on file changes
-3. Pull request validation with automated tests
-4. Automated builds for major platforms (Windows, macOS, Linux)
+1. Local development using Electron's development mode (`npm run dev`)
+2. Testing with built-in test scripts
+3. Packaging for different platforms (`npm run package-win`, `npm run package-mac`, etc.)
 
-## Rationale for Key Technology Choices
+## Future Technology Considerations
 
-### Why TypeScript?
-TypeScript provides strong typing that's essential for maintaining a complex application with multiple data transformations. The type system helps prevent errors in path processing and coordinate transformations.
+The following technologies were originally planned but not yet implemented:
 
-### Why Electron?
-Electron allows us to deliver a consistent experience across platforms while leveraging web technologies. It also provides native file system access required for loading SVGs and saving GCode files.
+### Planned Future Technologies
+- **TypeScript**: For strong typing and improved code quality
+- **React**: For a more structured and component-based UI
+- **Tailwind CSS**: For improved styling
+- **Three.js/React Three Fiber**: For 3D visualization
+- **Web Workers**: For improved performance with background processing
 
-### Why SVG.js and Paper.js?
-These libraries provide robust vector manipulation capabilities while abstracting browser inconsistencies. Paper.js excels at path operations needed for optimization.
+## Rationale for Current Technologies
 
-### Why Custom GCode Generation?
-Custom GCode generation ensures we have complete control over the output quality and can optimize specifically for CNC engraving with grayscale depth mapping. 
+### SVG Processing Libraries
+The current implementation uses a combination of svg-parser, svgpath, and custom processing to handle SVG parsing and transformation. These libraries provide the necessary functionality for extracting paths and attributes from SVG files.
+
+### Electron for Desktop Application
+Electron provides cross-platform compatibility and native file system access, which is essential for loading SVGs and saving GCode files. It also enables offline operation, which is a key requirement for workshop environments.
+
+### Custom GCode Generation
+The custom GCode generation ensures complete control over the output quality and optimization specifically for GRBL controllers. It allows for tailored commands based on path characteristics and depth information.
+
+### Development Tools
+The current build and packaging tools provide the necessary functionality for creating distributable applications for multiple platforms. Electron-builder simplifies the packaging process, and electron-updater provides update management capabilities. 

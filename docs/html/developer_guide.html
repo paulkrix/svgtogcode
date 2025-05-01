@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SVG to GCode Converter - Developer Guide - SVG to GCode Converter</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: 'default',
+        securityLevel: 'loose',
+        flowchart: { 
+          useMaxWidth: true,
+          htmlLabels: true
+        }
+      });
+
+      // Add active class to current page link
+      const currentPage = window.location.pathname.split('/').pop();
+      const navLinks = document.querySelectorAll('.nav-links a');
+      navLinks.forEach(link => {
+        const linkHref = link.getAttribute('href');
+        if (linkHref === currentPage || (currentPage === 'index.html' && linkHref === 'README.html')) {
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+  
+  <div class="mobile-nav">
+    <a href="index.html">Home</a>
+    <a href="installation_guide.html">Installation</a>
+    <a href="user_guide.html">User Guide</a>
+    <a href="developer_guide.html">For Developers</a>
+  </div>
+  
+  
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>SVG to GCode Converter</h2>
+      <p>Documentation</p>
+    </div>
+  
+    <div class="nav-section">
+      <div class="nav-section-title">Getting Started</div>
+      <ul class="nav-links">
+    <li><a href="README.html">Documentation Overview</a></li><li><a href="project_description.html">Project Overview</a></li><li><a href="installation_guide.html">Installation Guide</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">User Documentation</div>
+      <ul class="nav-links">
+    <li><a href="user_guide.html">User Guide</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">Technical Documentation</div>
+      <ul class="nav-links">
+    <li><a href="architecture_design.html">Architecture Design</a></li><li><a href="technical_specification.html">Technical Specification</a></li><li><a href="technology_stack.html">Technology Stack</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">Developer Documentation</div>
+      <ul class="nav-links">
+    <li><a href="developer_guide.html" class="active">Developer Guide</a></li><li><a href="implementation_steps.html">Implementation Steps</a></li><li><a href="codebase_improvements.html">Codebase Improvements</a></li><li><a href="assessment_checklists.html">Assessment Checklists</a></li>
+      </ul>
+    </div>
+    </div>
+  <div class="main-content">
+    <h1 id="svg-to-gcode-converter---developer-guide">SVG to GCode Converter - Developer Guide</h1>
+<h2 id="architecture-overview">Architecture Overview</h2>
+<p>The SVG to GCode Converter is built with a modular architecture to allow for easy maintenance and extension. The application follows a data transformation pipeline pattern where SVG files go through several processing stages before being output as GCode.</p>
+<h3 id="high-level-components">High-Level Components</h3>
+<pre><code>┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│             │    │             │    │             │    │             │
+│  SVG Input  │──▶│  Processor  │──▶│  Toolpath   │──▶│    GCode    │
+│             │    │             │    │  Generator  │    │  Generator  │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+</code></pre>
+<h2 id="directory-structure">Directory Structure</h2>
+<pre><code>/svg-to-gcode-converter
+├── src/                  # Source code
+│   ├── parser/           # SVG parsing modules
+│   ├── processor/        # SVG processing and transformation
+│   ├── toolpath/         # Toolpath generation algorithms
+│   ├── gcode/            # GCode generation and flavors
+│   ├── models/           # Data models and types
+│   ├── utils/            # Utility functions
+│   ├── ui/               # User interface components
+│   ├── visualization/    # Toolpath visualization
+│   ├── input/            # Input handling (files, streams)
+│   └── index.js          # Application entry point
+├── tests/                # Test files
+├── docs/                 # Documentation
+├── examples/             # Example SVG files
+├── output/               # Default output directory
+└── debug_output/         # Debug files and visualizations
+</code></pre>
+<h2 id="core-modules">Core Modules</h2>
+<h3 id="svg-parser-srcparsersvg-parserjs">SVG Parser (<code>src/parser/svg-parser.js</code>)</h3>
+<p>Responsible for parsing SVG files and extracting path data. It handles different SVG element types (paths, rectangles, circles, etc.) and converts them into a unified internal representation.</p>
+<pre><code class="language-javascript">// Example usage:
+const svgData = SVGParser.parse(svgString);
+// For large files:
+const svgData = await SVGParser.parseFile(filePath);
+</code></pre>
+<h4 id="key-methods">Key Methods:</h4>
+<ul>
+<li><code>parse(svgString)</code>: Parse SVG string content</li>
+<li><code>parseFile(filePath)</code>: Parse SVG file with streaming for large files</li>
+<li><code>_parseWithXml2js(svgString)</code>: Alternative parser for very large files</li>
+</ul>
+<h3 id="path-generator-srctoolpathpath-generatorjs">Path Generator (<code>src/toolpath/path-generator.js</code>)</h3>
+<p>Converts SVG paths into toolpaths with 3D coordinates, incorporating depth based on grayscale values.</p>
+<pre><code class="language-javascript">// Example usage:
+const pathGenerator = new PathGenerator(config);
+const toolpaths = pathGenerator.generate(processedData, svgInput);
+</code></pre>
+<h4 id="key-features">Key Features:</h4>
+<ul>
+<li>Path optimization via reordering to minimize travel distance</li>
+<li>Path smoothing to reduce jerky movements</li>
+<li>Adaptive point decimation to reduce GCode file size</li>
+<li>Support for various SVG path commands and shape types</li>
+</ul>
+<h3 id="gcode-generator-srcgcodegcode-generatorjs">GCode Generator (<code>src/gcode/gcode-generator.js</code>)</h3>
+<p>Creates machine-specific GCode from toolpaths.</p>
+<pre><code class="language-javascript">// Example usage:
+const gcodeGenerator = new GCodeGenerator(config);
+const gcode = gcodeGenerator.generate(toolpathData);
+</code></pre>
+<h4 id="key-features-1">Key Features:</h4>
+<ul>
+<li>Support for multiple GCode flavors (GRBL, Marlin, Mach3, etc.)</li>
+<li>Smart height transitions between toolpaths</li>
+<li>Collision avoidance</li>
+<li>Time and distance estimation</li>
+</ul>
+<h3 id="gcode-flavors-srcgcodegcode-flavorsjs">GCode Flavors (<code>src/gcode/gcode-flavors.js</code>)</h3>
+<p>Defines syntax and commands for different machine controllers.</p>
+<pre><code class="language-javascript">// Available flavors:
+const { 
+  GRBL_FLAVOR,
+  MARLIN_FLAVOR,
+  MACH3_FLAVOR,
+  FANUC_FLAVOR,
+  LINUXCNC_FLAVOR
+} = require(&#39;./gcode-flavors&#39;);
+</code></pre>
+<h2 id="data-flow">Data Flow</h2>
+<ol>
+<li>SVG input is parsed into an internal representation</li>
+<li>The processor applies grayscale-to-depth mapping</li>
+<li>The path generator creates optimized toolpaths</li>
+<li>The GCode generator outputs machine code</li>
+</ol>
+<pre><code class="language-javascript">// Example of the complete pipeline:
+const svgString = fs.readFileSync(filePath, &#39;utf8&#39;);
+const svgData = SVGParser.parse(svgString);
+const processedData = Processor.process(svgData, config);
+const toolpaths = pathGenerator.generate(processedData, svgData);
+const gcode = gcodeGenerator.generate(toolpaths);
+</code></pre>
+<h2 id="configuration-system">Configuration System</h2>
+<p>The application uses a unified configuration object that defines all aspects of the conversion process. Configuration is modular with sensible defaults.</p>
+<pre><code class="language-javascript">// Example configuration:
+const config = {
+  grayscaleMapping: {
+    minDepth: 0,
+    maxDepth: 5,
+    invert: false
+  },
+  machine: {
+    workArea: { width: 300, height: 300 },
+    feedRates: {
+      default: 500,
+      plunge: 100,
+      rapid: 3000
+    },
+    safeHeight: 5,
+    flavor: &#39;grbl&#39;,
+    clearanceMoveMaxDistance: 50,
+    clearanceMoveMaxDepthDiff: 5
+  },
+  tool: {
+    diameter: 3.175,
+    spindleSpeed: 1000
+  },
+  toolpath: {
+    optimize: true,
+    smoothingLevel: 0.2,
+    resolution: 20,
+    decimationTolerance: 0.05,
+    circleSegments: 36,
+    constantZ: false
+  },
+  output: {
+    precision: 3,
+    includeHeader: true,
+    includeFooter: true
+  }
+};
+</code></pre>
+<h2 id="adding-new-features">Adding New Features</h2>
+<h3 id="adding-a-new-gcode-flavor">Adding a New GCode Flavor</h3>
+<ol>
+<li>Add a new flavor definition in <code>src/gcode/gcode-flavors.js</code></li>
+<li>Define syntax, commands, and feature support</li>
+<li>Update the <code>_initializeFlavor()</code> method in GCodeGenerator</li>
+</ol>
+<h3 id="extending-svg-support">Extending SVG Support</h3>
+<p>To add support for new SVG elements or attributes:</p>
+<ol>
+<li>Update the appropriate parsing method in <code>SVGParser</code></li>
+<li>Add handling in the processor for the new elements</li>
+<li>Implement path generation for the new element type</li>
+</ol>
+<h3 id="adding-path-optimization-algorithms">Adding Path Optimization Algorithms</h3>
+<ol>
+<li>Create a new method in <code>PathGenerator</code> (e.g., <code>_newOptimizationAlgorithm()</code>)</li>
+<li>Add a configuration option to control the new algorithm</li>
+<li>Integrate the algorithm into the path generation pipeline</li>
+</ol>
+<h2 id="testing">Testing</h2>
+<p>The project uses Jest for testing. Run tests with:</p>
+<pre><code class="language-bash">npm test
+</code></pre>
+<p>Key test areas:</p>
+<ul>
+<li>SVG parsing accuracy</li>
+<li>Path generation correctness</li>
+<li>GCode output validation</li>
+<li>Performance benchmarks</li>
+</ul>
+<h3 id="writing-tests">Writing Tests</h3>
+<pre><code class="language-javascript">// Example test for SVG parsing
+describe(&#39;SVGParser&#39;, () =&gt; {
+  it(&#39;should parse a simple rectangle&#39;, () =&gt; {
+    const svgString = &#39;&lt;svg&gt;&lt;rect x=&quot;10&quot; y=&quot;10&quot; width=&quot;100&quot; height=&quot;50&quot; /&gt;&lt;/svg&gt;&#39;;
+    const result = SVGParser.parse(svgString);
+    expect(result.paths).toHaveLength(1);
+    expect(result.paths[0].type).toBe(&#39;rect&#39;);
+  });
+});
+</code></pre>
+<h2 id="building-for-distribution">Building for Distribution</h2>
+<p>The project uses Electron for the desktop application and Webpack for bundling.</p>
+<pre><code class="language-bash"># Development build
+npm run dev
+
+# Production build
+npm run build
+
+# Package for distribution
+npm run package
+</code></pre>
+<h2 id="update-mechanism">Update Mechanism</h2>
+<p>The application includes an auto-update mechanism using Electron&#39;s autoUpdater module. Updates are pulled from the GitHub releases page.</p>
+<h3 id="update-process">Update Process</h3>
+<ol>
+<li>Application checks for updates at startup</li>
+<li>If an update is available, it&#39;s downloaded in the background</li>
+<li>User is prompted to install after download completes</li>
+<li>Update is applied on application restart</li>
+</ol>
+<h3 id="publishing-updates">Publishing Updates</h3>
+<ol>
+<li>Increment version in <code>package.json</code></li>
+<li>Build the application: <code>npm run build</code></li>
+<li>Package for all platforms: <code>npm run package-all</code></li>
+<li>Create a new GitHub release with the packaged files</li>
+<li>Tag the release with the version number</li>
+</ol>
+<h2 id="contributing">Contributing</h2>
+<p>We follow a standard Git workflow:</p>
+<ol>
+<li>Fork the repository</li>
+<li>Create a feature branch</li>
+<li>Make your changes</li>
+<li>Write or update tests</li>
+<li>Submit a pull request</li>
+</ol>
+<h3 id="code-style-guidelines">Code Style Guidelines</h3>
+<ul>
+<li>Use ES6+ features where appropriate</li>
+<li>Follow the existing module pattern</li>
+<li>Document public methods with JSDoc comments</li>
+<li>Keep functions small and focused</li>
+<li>Use meaningful variable names</li>
+</ul>
+<h2 id="common-development-tasks">Common Development Tasks</h2>
+<h3 id="adding-a-new-configuration-option">Adding a New Configuration Option</h3>
+<ol>
+<li>Add the option to the configuration schema</li>
+<li>Set a sensible default value</li>
+<li>Add UI controls in the configuration panel</li>
+<li>Update the relevant modules to use the new option</li>
+<li>Document the option in user and developer guides</li>
+</ol>
+<h3 id="debugging-tips">Debugging Tips</h3>
+<ul>
+<li>Enable debug output: <code>DEBUG=svg-to-gcode:* npm run dev</code></li>
+<li>Use the debug output directory to examine intermediate results</li>
+<li>The application can generate SVG visualizations of toolpaths</li>
+</ul>
+<h2 id="license">License</h2>
+<p>This project is licensed under the MIT License - see the LICENSE file for details. </p>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "svg-to-gcode-docs",
+  "version": "1.0.0",
+  "description": "Documentation generator for SVG to GCode Converter",
+  "main": "generate-html-docs.js",
+  "scripts": {
+    "build": "node generate-html-docs.js",
+    "start": "http-server ../../html -o"
+  },
+  "dependencies": {
+    "marked": "^4.3.0"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+} 

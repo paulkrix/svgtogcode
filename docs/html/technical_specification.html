@@ -1,17 +1,87 @@
-# SVG to GCode Converter - Technical Specification
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SVG to GCode Converter - Technical Specification - SVG to GCode Converter</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: 'default',
+        securityLevel: 'loose',
+        flowchart: { 
+          useMaxWidth: true,
+          htmlLabels: true
+        }
+      });
 
-## Overview
-
-This document details the technical specifications for the SVG to GCode converter application, focusing on API definitions, data models, and key algorithms as they are currently implemented in the codebase.
-
-## Data Models
-
-### 1. SVG Input Representation
-
-The SVG input is represented as parsed data from the svg-parser library. The SVGProcessor converts this into an internal representation:
-
-```javascript
-// Internal SVG representation
+      // Add active class to current page link
+      const currentPage = window.location.pathname.split('/').pop();
+      const navLinks = document.querySelectorAll('.nav-links a');
+      navLinks.forEach(link => {
+        const linkHref = link.getAttribute('href');
+        if (linkHref === currentPage || (currentPage === 'index.html' && linkHref === 'README.html')) {
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+  
+  <div class="mobile-nav">
+    <a href="index.html">Home</a>
+    <a href="installation_guide.html">Installation</a>
+    <a href="user_guide.html">User Guide</a>
+    <a href="developer_guide.html">For Developers</a>
+  </div>
+  
+  
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>SVG to GCode Converter</h2>
+      <p>Documentation</p>
+    </div>
+  
+    <div class="nav-section">
+      <div class="nav-section-title">Getting Started</div>
+      <ul class="nav-links">
+    <li><a href="README.html">Documentation Overview</a></li><li><a href="project_description.html">Project Overview</a></li><li><a href="installation_guide.html">Installation Guide</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">User Documentation</div>
+      <ul class="nav-links">
+    <li><a href="user_guide.html">User Guide</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">Technical Documentation</div>
+      <ul class="nav-links">
+    <li><a href="architecture_design.html">Architecture Design</a></li><li><a href="technical_specification.html" class="active">Technical Specification</a></li><li><a href="technology_stack.html">Technology Stack</a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-section-title">Developer Documentation</div>
+      <ul class="nav-links">
+    <li><a href="developer_guide.html">Developer Guide</a></li><li><a href="implementation_steps.html">Implementation Steps</a></li><li><a href="codebase_improvements.html">Codebase Improvements</a></li><li><a href="assessment_checklists.html">Assessment Checklists</a></li>
+      </ul>
+    </div>
+    </div>
+  <div class="main-content">
+    <h1 id="svg-to-gcode-converter---technical-specification">SVG to GCode Converter - Technical Specification</h1>
+<h2 id="overview">Overview</h2>
+<p>This document details the technical specifications for the SVG to GCode converter application, focusing on API definitions, data models, and key algorithms as they are currently implemented in the codebase.</p>
+<h2 id="data-models">Data Models</h2>
+<h3 id="1-svg-input-representation">1. SVG Input Representation</h3>
+<p>The SVG input is represented as parsed data from the svg-parser library. The SVGProcessor converts this into an internal representation:</p>
+<pre><code class="language-javascript">// Internal SVG representation
 {
   paths: [
     {
@@ -45,14 +115,10 @@ The SVG input is represented as parsed data from the svg-parser library. The SVG
     height: Number
   }
 }
-```
-
-### 2. Toolpath Representation
-
-Toolpaths are represented as a collection of points with associated depth values:
-
-```javascript
-// Toolpath representation
+</code></pre>
+<h3 id="2-toolpath-representation">2. Toolpath Representation</h3>
+<p>Toolpaths are represented as a collection of points with associated depth values:</p>
+<pre><code class="language-javascript">// Toolpath representation
 {
   toolpaths: [
     {
@@ -72,12 +138,9 @@ Toolpaths are represented as a collection of points with associated depth values
   ],
   config: Object                    // Configuration used for generation
 }
-```
-
-### 3. GCode Output Model
-
-```javascript
-// Final GCode output
+</code></pre>
+<h3 id="3-gcode-output-model">3. GCode Output Model</h3>
+<pre><code class="language-javascript">// Final GCode output
 {
   header: String[],                 // Array of header commands/comments
   commands: String[],               // Array of GCode commands
@@ -90,15 +153,12 @@ Toolpaths are represented as a collection of points with associated depth values
   },
   estimatedTime: Number             // Estimated machining time
 }
-```
-
-### 4. Configuration Model
-
-```javascript
-// Configuration object
+</code></pre>
+<h3 id="4-configuration-model">4. Configuration Model</h3>
+<pre><code class="language-javascript">// Configuration object
 {
   machine: {                        // Machine configuration
-    flavor: String,                 // GCode flavor ('grbl', 'marlin', etc.)
+    flavor: String,                 // GCode flavor (&#39;grbl&#39;, &#39;marlin&#39;, etc.)
     feedRates: {                    // Feed rates in mm/min
       default: Number,              // Default feed rate
       plunge: Number,               // Plunge feed rate
@@ -115,7 +175,7 @@ Toolpaths are represented as a collection of points with associated depth values
     spindleSpeed: Number            // Spindle speed (RPM)
   },
   grayscaleMapping: {               // Grayscale mapping configuration
-    type: String,                   // Mapping type ('linear', 'custom')
+    type: String,                   // Mapping type (&#39;linear&#39;, &#39;custom&#39;)
     maxDepth: Number,               // Maximum cutting depth (mm)
     minDepth: Number,               // Minimum cutting depth (mm)
     invert: Boolean                 // Whether to invert depth mapping
@@ -126,16 +186,11 @@ Toolpaths are represented as a collection of points with associated depth values
     precision: Number               // Decimal precision
   }
 }
-```
-
-## API Specifications
-
-The application's core functionality is provided through the following APIs:
-
-### 1. SVG Processor API
-
-```javascript
-/**
+</code></pre>
+<h2 id="api-specifications">API Specifications</h2>
+<p>The application&#39;s core functionality is provided through the following APIs:</p>
+<h3 id="1-svg-processor-api">1. SVG Processor API</h3>
+<pre><code class="language-javascript">/**
  * SVG Processor - Handles SVG parsing, processing and conversion to GCode
  */
 class SVGProcessor {
@@ -220,12 +275,9 @@ class SVGProcessor {
    */
   getGCodeVisualization(gcode, toolpathData, config) {}
 }
-```
-
-### 2. Path Generator API
-
-```javascript
-/**
+</code></pre>
+<h3 id="2-path-generator-api">2. Path Generator API</h3>
+<pre><code class="language-javascript">/**
  * Path Generator - Converts SVG paths to optimized toolpaths
  */
 class PathGenerator {
@@ -260,12 +312,9 @@ class PathGenerator {
    */
   handleSafeTravel(points, safeHeight) {}
 }
-```
-
-### 3. GCode Generator API
-
-```javascript
-/**
+</code></pre>
+<h3 id="3-gcode-generator-api">3. GCode Generator API</h3>
+<pre><code class="language-javascript">/**
  * GCode Generator - Produces GCode from toolpaths
  */
 class GCodeGenerator {
@@ -300,25 +349,22 @@ class GCodeGenerator {
    */
   generateFooter(config) {}
 }
-```
-
-### 4. Update Manager API
-
-```javascript
-/**
+</code></pre>
+<h3 id="4-update-manager-api">4. Update Manager API</h3>
+<pre><code class="language-javascript">/**
  * Update Manager - Handles application updates
  */
 class UpdateManager {
   /**
    * Check for application updates
    * @param {boolean} silent - Whether to check silently
-   * @returns {Promise<void>}
+   * @returns {Promise&lt;void&gt;}
    */
   checkForUpdates(silent) {}
   
   /**
    * Install pending update
-   * @returns {Promise<void>}
+   * @returns {Promise&lt;void&gt;}
    */
   installUpdate() {}
   
@@ -328,16 +374,11 @@ class UpdateManager {
    */
   isUpdateReady() {}
 }
-```
-
-## Algorithm Specifications
-
-### 1. Grayscale to Depth Mapping Algorithm
-
-The grayscale to depth mapping algorithm is implemented in the SVG Processor's `_calculateGrayscale` method and is used to convert grayscale values (0-255) to physical depth values (in mm) for CNC machining.
-
-```javascript
-/**
+</code></pre>
+<h2 id="algorithm-specifications">Algorithm Specifications</h2>
+<h3 id="1-grayscale-to-depth-mapping-algorithm">1. Grayscale to Depth Mapping Algorithm</h3>
+<p>The grayscale to depth mapping algorithm is implemented in the SVG Processor&#39;s <code>_calculateGrayscale</code> method and is used to convert grayscale values (0-255) to physical depth values (in mm) for CNC machining.</p>
+<pre><code class="language-javascript">/**
  * Calculate grayscale value from fill color
  * @param {string} fill - Fill color string (hex, rgb, named color)
  * @returns {number} - Grayscale value (0-255)
@@ -364,14 +405,10 @@ mapGrayscaleToDepth(grayscale, config) {
     return minDepth + (maxDepth - minDepth) * (1 - normalizedValue);
   }
 }
-```
-
-### 2. Path Optimization Algorithm
-
-The path optimization algorithm is implemented in the Path Generator to reorder paths to minimize non-cutting travel distance and time.
-
-```javascript
-/**
+</code></pre>
+<h3 id="2-path-optimization-algorithm">2. Path Optimization Algorithm</h3>
+<p>The path optimization algorithm is implemented in the Path Generator to reorder paths to minimize non-cutting travel distance and time.</p>
+<pre><code class="language-javascript">/**
  * Optimize paths to minimize travel distance
  * @param {Array} paths - Array of paths
  * @returns {Array} - Optimized paths
@@ -382,7 +419,7 @@ optimizePaths(paths) {
   const optimizedPaths = [];
   const remainingPaths = [...paths];
   
-  while (remainingPaths.length > 0) {
+  while (remainingPaths.length &gt; 0) {
     // Find nearest path
     const nearestIndex = this._findNearestPathIndex(currentPosition, remainingPaths);
     const nextPath = remainingPaths.splice(nearestIndex, 1)[0];
@@ -397,34 +434,26 @@ optimizePaths(paths) {
   
   return optimizedPaths;
 }
-```
-
-### 3. Circle and Arc Fixing Algorithm
-
-The circle and arc fixing algorithm is implemented in specialized utilities to correct issues with circular elements in SVG files.
-
-```javascript
-/**
+</code></pre>
+<h3 id="3-circle-and-arc-fixing-algorithm">3. Circle and Arc Fixing Algorithm</h3>
+<p>The circle and arc fixing algorithm is implemented in specialized utilities to correct issues with circular elements in SVG files.</p>
+<pre><code class="language-javascript">/**
  * Fix arcs and circles in SVG for better toolpath generation
  * @param {Array} paths - Array of paths
  * @returns {Array} - Fixed paths
  */
 fixCirclesAndArcs(paths) {
-  return paths.map(path => {
-    if (path.type === 'circle' || path.type === 'arc') {
+  return paths.map(path =&gt; {
+    if (path.type === &#39;circle&#39; || path.type === &#39;arc&#39;) {
       return this._fixCircularPath(path);
     }
     return path;
   });
 }
-```
-
-### 4. GCode Generation for GRBL
-
-The GRBL-specific GCode generation algorithm is implemented in the GCode Generator to create commands optimized for GRBL controllers.
-
-```javascript
-/**
+</code></pre>
+<h3 id="4-gcode-generation-for-grbl">4. GCode Generation for GRBL</h3>
+<p>The GRBL-specific GCode generation algorithm is implemented in the GCode Generator to create commands optimized for GRBL controllers.</p>
+<pre><code class="language-javascript">/**
  * Generate GRBL-compatible GCode
  * @param {Object} toolpaths - Toolpath data
  * @param {Object} config - Configuration
@@ -437,86 +466,142 @@ generateGRBL(toolpaths, config) {
   commands.push(...this._generateGRBLHeader(config));
   
   // Process each toolpath
-  toolpaths.forEach(toolpath => {
+  toolpaths.forEach(toolpath =&gt; {
     commands.push(...this._processToolpath(toolpath, config));
   });
   
   // Add footer
   commands.push(...this._generateGRBLFooter(config));
   
-  return commands.join('\n');
+  return commands.join(&#39;\n&#39;);
 }
-```
-
-## Error Handling
-
-The application implements error handling primarily through try-catch blocks in the main processing methods. Errors are logged to the console and in some cases are displayed to the user through dialog boxes.
-
-```javascript
-try {
+</code></pre>
+<h2 id="error-handling">Error Handling</h2>
+<p>The application implements error handling primarily through try-catch blocks in the main processing methods. Errors are logged to the console and in some cases are displayed to the user through dialog boxes.</p>
+<pre><code class="language-javascript">try {
   // Process SVG data
   if (progressCallback) progressCallback(10);
-  console.log("Processing SVG data...");
+  console.log(&quot;Processing SVG data...&quot;);
   const processedData = await this.getProcessedData(svgData, config);
   
   // Additional processing...
 } catch (error) {
-  console.error('Error converting SVG to GCode:', error);
+  console.error(&#39;Error converting SVG to GCode:&#39;, error);
   throw error;
 }
-```
-
-## File Format Specifications
-
-### 1. Configuration File (JSON)
-
-```json
-{
-  "machine": {
-    "flavor": "grbl",
-    "feedRates": {
-      "default": 1000,
-      "plunge": 300,
-      "rapid": 3000
+</code></pre>
+<h2 id="file-format-specifications">File Format Specifications</h2>
+<h3 id="1-configuration-file-json">1. Configuration File (JSON)</h3>
+<pre><code class="language-json">{
+  &quot;machine&quot;: {
+    &quot;flavor&quot;: &quot;grbl&quot;,
+    &quot;feedRates&quot;: {
+      &quot;default&quot;: 1000,
+      &quot;plunge&quot;: 300,
+      &quot;rapid&quot;: 3000
     },
-    "safeHeight": 5,
-    "workArea": {
-      "width": 300,
-      "height": 200
+    &quot;safeHeight&quot;: 5,
+    &quot;workArea&quot;: {
+      &quot;width&quot;: 300,
+      &quot;height&quot;: 200
     }
   },
-  "tool": {
-    "diameter": 3.175,
-    "spindleSpeed": 12000
+  &quot;tool&quot;: {
+    &quot;diameter&quot;: 3.175,
+    &quot;spindleSpeed&quot;: 12000
   },
-  "grayscaleMapping": {
-    "type": "linear",
-    "maxDepth": 3,
-    "minDepth": 0.1,
-    "invert": false
+  &quot;grayscaleMapping&quot;: {
+    &quot;type&quot;: &quot;linear&quot;,
+    &quot;maxDepth&quot;: 3,
+    &quot;minDepth&quot;: 0.1,
+    &quot;invert&quot;: false
   },
-  "output": {
-    "includeHeader": true,
-    "includeFooter": true,
-    "precision": 3
+  &quot;output&quot;: {
+    &quot;includeHeader&quot;: true,
+    &quot;includeFooter&quot;: true,
+    &quot;precision&quot;: 3
   }
 }
-```
+</code></pre>
+<h2 id="appendix-grbl-command-reference">Appendix: GRBL Command Reference</h2>
+<p>This section provides a reference for the most commonly used GRBL commands in the generated GCode.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+<th>Example</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>G0</td>
+<td>Rapid positioning</td>
+<td>G0 X10 Y20 Z5</td>
+<td>Used for non-cutting movements</td>
+</tr>
+<tr>
+<td>G1</td>
+<td>Linear interpolation</td>
+<td>G1 X10 Y20 Z-1 F800</td>
+<td>Used for cutting movements</td>
+</tr>
+<tr>
+<td>G2</td>
+<td>Circular interpolation (CW)</td>
+<td>G2 X10 Y10 I5 J0 F800</td>
+<td>Center specified with I,J</td>
+</tr>
+<tr>
+<td>G3</td>
+<td>Circular interpolation (CCW)</td>
+<td>G3 X10 Y10 I0 J5 F800</td>
+<td>Center specified with I,J</td>
+</tr>
+<tr>
+<td>G90</td>
+<td>Absolute positioning</td>
+<td>G90</td>
+<td>Coordinates relative to origin</td>
+</tr>
+<tr>
+<td>G21</td>
+<td>Millimeter units</td>
+<td>G21</td>
+<td>Default for this application</td>
+</tr>
+<tr>
+<td>M3</td>
+<td>Spindle on (clockwise)</td>
+<td>M3 S10000</td>
+<td>S parameter sets RPM</td>
+</tr>
+<tr>
+<td>M5</td>
+<td>Spindle off</td>
+<td>M5</td>
+<td>Used in footer</td>
+</tr>
+<tr>
+<td>F</td>
+<td>Feed rate</td>
+<td>F800</td>
+<td>In mm/min</td>
+</tr>
+<tr>
+<td>S</td>
+<td>Spindle speed</td>
+<td>S10000</td>
+<td>In RPM</td>
+</tr>
+<tr>
+<td>M2</td>
+<td>Program end</td>
+<td>M2</td>
+<td>Used in footer</td>
+</tr>
+</tbody></table>
 
-## Appendix: GRBL Command Reference
-
-This section provides a reference for the most commonly used GRBL commands in the generated GCode.
-
-| Command | Description | Example | Notes |
-|---------|-------------|---------|-------|
-| G0 | Rapid positioning | G0 X10 Y20 Z5 | Used for non-cutting movements |
-| G1 | Linear interpolation | G1 X10 Y20 Z-1 F800 | Used for cutting movements |
-| G2 | Circular interpolation (CW) | G2 X10 Y10 I5 J0 F800 | Center specified with I,J |
-| G3 | Circular interpolation (CCW) | G3 X10 Y10 I0 J5 F800 | Center specified with I,J |
-| G90 | Absolute positioning | G90 | Coordinates relative to origin |
-| G21 | Millimeter units | G21 | Default for this application |
-| M3 | Spindle on (clockwise) | M3 S10000 | S parameter sets RPM |
-| M5 | Spindle off | M5 | Used in footer |
-| F | Feed rate | F800 | In mm/min |
-| S | Spindle speed | S10000 | In RPM |
-| M2 | Program end | M2 | Used in footer | 
+  </div>
+</body>
+</html>
