@@ -15,25 +15,62 @@ let currentGCode = null;
 let processedData = null;
 let toolpathData = null;
 let config = null;
+let isSimulating = false;
+let simulationTimer = null;
+let currentSimulationStep = 0;
+let simulationSpeed = 1;
 
-// DOM Elements
+// DOM Elements - Main UI
 const loadSvgBtn = document.getElementById('loadSvgBtn');
 const saveGcodeBtn = document.getElementById('saveGcodeBtn');
 const settingsBtn = document.getElementById('settingsBtn');
 const convertBtn = document.getElementById('convertBtn');
+const themeToggleBtn = document.getElementById('themeToggleBtn');
 const toggleDebugBtn = document.getElementById('toggleDebugBtn');
 const svgPreview = document.getElementById('svgPreview');
-const gcodePreview = document.getElementById('gcodePreview');
+const visualizationDashboard = document.getElementById('visualizationDashboard');
+const toolpathVisualization = document.getElementById('toolpathVisualization');
+const gcode3DVisualization = document.getElementById('gcode3DVisualization');
 const debugPanel = document.getElementById('debugPanel');
 const fileInfo = document.getElementById('fileInfo');
 const progressFill = document.getElementById('progressFill');
 const statusText = document.getElementById('statusText');
+
+// DOM Elements - Settings Modal
 const settingsModal = document.getElementById('settingsModal');
 const closeButton = document.querySelector('.close-button');
 const tabButtons = document.querySelectorAll('.tab-button');
 const tabContents = document.querySelectorAll('.tab-content');
 const saveSettingsBtn = document.getElementById('saveSettingsBtn');
 const cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
+
+// DOM Elements - View Controls
+const syncViewsBtn = document.getElementById('syncViewsBtn');
+const viewModeToggle = document.getElementById('viewModeToggle');
+const viewModeToggle2D = document.getElementById('viewModeToggle2D');
+const viewModeToggle3D = document.getElementById('viewModeToggle3D');
+const viewTop = document.getElementById('viewTop');
+const viewFront = document.getElementById('viewFront');
+const viewSide = document.getElementById('viewSide');
+const viewIsometric = document.getElementById('viewIsometric');
+const zoomInBtn2D = document.getElementById('zoomInBtn2D');
+const zoomOutBtn2D = document.getElementById('zoomOutBtn2D');
+const resetViewBtn2D = document.getElementById('resetViewBtn2D');
+
+// DOM Elements - Timeline and Playback
+const playBtn = document.getElementById('playBtn');
+const pauseBtn = document.getElementById('pauseBtn');
+const stopBtn = document.getElementById('stopBtn');
+const speedSelect = document.getElementById('speedSelect');
+const timelineSlider = document.getElementById('timelineSlider');
+const currentTimeDisplay = document.getElementById('currentTimeDisplay');
+const totalTimeDisplay = document.getElementById('totalTimeDisplay');
+
+// DOM Elements - Metadata
+const estimatedTime = document.getElementById('estimatedTime');
+const cuttingDistance = document.getElementById('cuttingDistance');
+const depthRange = document.getElementById('depthRange');
+const commandCount = document.getElementById('commandCount');
 
 // Form elements
 const minDepthInput = document.getElementById('minDepth');
@@ -49,6 +86,9 @@ async function initApp() {
     // Load configuration
     config = await window.api.loadConfiguration();
     
+    // Apply saved theme
+    applySavedTheme();
+    
     // Update form values with config
     updateFormFromConfig();
     
@@ -58,6 +98,30 @@ async function initApp() {
     statusText.textContent = 'Ready';
   } catch (error) {
     statusText.textContent = `Error: ${error.message}`;
+  }
+}
+
+// Apply saved theme from local storage
+function applySavedTheme() {
+  const isDarkTheme = localStorage.getItem('darkTheme') === 'true';
+  if (isDarkTheme) {
+    document.body.classList.add('dark-theme');
+    themeToggleBtn.innerHTML = '<i class="fas fa-sun"></i>';
+  } else {
+    document.body.classList.remove('dark-theme');
+    themeToggleBtn.innerHTML = '<i class="fas fa-moon"></i>';
+  }
+}
+
+// Toggle dark/light theme
+function toggleTheme() {
+  const isDarkTheme = document.body.classList.toggle('dark-theme');
+  localStorage.setItem('darkTheme', isDarkTheme);
+  
+  if (isDarkTheme) {
+    themeToggleBtn.innerHTML = '<i class="fas fa-sun"></i>';
+  } else {
+    themeToggleBtn.innerHTML = '<i class="fas fa-moon"></i>';
   }
 }
 
@@ -73,17 +137,45 @@ function updateFormFromConfig() {
 
 // Setup event listeners
 function setupEventListeners() {
-  // Button click handlers
+  // Button click handlers - Main UI
   loadSvgBtn.addEventListener('click', handleLoadSVG);
   saveGcodeBtn.addEventListener('click', handleSaveGCode);
   settingsBtn.addEventListener('click', handleOpenSettings);
   convertBtn.addEventListener('click', handleConvertSVG);
-  toggleDebugBtn.addEventListener('click', toggleDebugPanel);
+  themeToggleBtn.addEventListener('click', toggleTheme);
+  
+  // Settings modal handlers
   closeButton.addEventListener('click', closeModal);
   saveSettingsBtn.addEventListener('click', saveSettings);
   cancelSettingsBtn.addEventListener('click', closeModal);
   
-  // Tab handlers
+  // View mode toggles
+  viewModeToggle.addEventListener('click', () => setViewMode('side-by-side'));
+  viewModeToggle2D.addEventListener('click', () => setViewMode('2d-only'));
+  viewModeToggle3D.addEventListener('click', () => setViewMode('3d-only'));
+  
+  // 3D view buttons
+  viewTop.addEventListener('click', () => set3DView('top'));
+  viewFront.addEventListener('click', () => set3DView('front'));
+  viewSide.addEventListener('click', () => set3DView('side'));
+  viewIsometric.addEventListener('click', () => set3DView('isometric'));
+  
+  // Zoom controls
+  zoomInBtn2D.addEventListener('click', () => zoom2D('in'));
+  zoomOutBtn2D.addEventListener('click', () => zoom2D('out'));
+  resetViewBtn2D.addEventListener('click', resetView2D);
+  
+  // Playback controls
+  playBtn.addEventListener('click', startSimulation);
+  pauseBtn.addEventListener('click', pauseSimulation);
+  stopBtn.addEventListener('click', stopSimulation);
+  speedSelect.addEventListener('change', updateSimulationSpeed);
+  timelineSlider.addEventListener('input', handleTimelineChange);
+  
+  // Sync views button
+  syncViewsBtn.addEventListener('click', toggleSyncViews);
+  
+  // Tab handlers for settings modal
   tabButtons.forEach(button => {
     button.addEventListener('click', () => {
       const tabName = button.getAttribute('data-tab');
@@ -97,7 +189,7 @@ function setupEventListeners() {
     });
   });
   
-  // Listen for conversion progress
+  // Listen for conversion progress and completion
   window.api.on('conversion-progress', handleProgress);
   window.api.on('conversion-complete', handleConversionComplete);
   window.api.on('error', handleError);
@@ -110,15 +202,185 @@ function setupEventListeners() {
   });
 }
 
-// Toggle debug panel visibility
-function toggleDebugPanel() {
-  if (debugPanel.classList.contains('visible')) {
-    debugPanel.classList.remove('visible');
-    toggleDebugBtn.textContent = 'Show Debug Info';
-  } else {
-    debugPanel.classList.add('visible');
-    toggleDebugBtn.textContent = 'Hide Debug Info';
+// Set view mode (side-by-side, 2D only, 3D only)
+function setViewMode(mode) {
+  // Reset all buttons
+  viewModeToggle.classList.remove('active');
+  viewModeToggle2D.classList.remove('active');
+  viewModeToggle3D.classList.remove('active');
+  
+  const toolpathPanel = document.getElementById('toolpathPanel');
+  const gcodePanel = document.getElementById('gcodePanel');
+  
+  switch (mode) {
+    case 'side-by-side':
+      viewModeToggle.classList.add('active');
+      toolpathPanel.style.display = 'flex';
+      gcodePanel.style.display = 'flex';
+      break;
+    case '2d-only':
+      viewModeToggle2D.classList.add('active');
+      toolpathPanel.style.display = 'flex';
+      gcodePanel.style.display = 'none';
+      break;
+    case '3d-only':
+      viewModeToggle3D.classList.add('active');
+      toolpathPanel.style.display = 'none';
+      gcodePanel.style.display = 'flex';
+      break;
   }
+}
+
+// Set 3D view perspective
+function set3DView(view) {
+  // Reset all buttons
+  document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
+  
+  const svg = document.querySelector('#gcode3DVisualization svg');
+  if (!svg) return;
+  
+  switch (view) {
+    case 'top':
+      viewTop.classList.add('active');
+      svg.style.transform = 'rotateX(0deg) rotateY(0deg)';
+      break;
+    case 'front':
+      viewFront.classList.add('active');
+      svg.style.transform = 'rotateX(90deg) rotateY(0deg)';
+      break;
+    case 'side':
+      viewSide.classList.add('active');
+      svg.style.transform = 'rotateX(0deg) rotateY(90deg)';
+      break;
+    case 'isometric':
+      viewIsometric.classList.add('active');
+      svg.style.transform = 'rotateX(45deg) rotateY(45deg)';
+      break;
+  }
+}
+
+// Zoom controls for 2D view
+function zoom2D(direction) {
+  const svg = document.querySelector('#toolpathVisualization svg');
+  if (!svg) return;
+  
+  // Get current scale from transform or set default
+  let currentScale = 1;
+  const transformValue = svg.style.transform;
+  if (transformValue) {
+    const match = transformValue.match(/scale\(([^)]+)\)/);
+    if (match && match[1]) {
+      currentScale = parseFloat(match[1]);
+    }
+  }
+  
+  // Adjust scale
+  if (direction === 'in') {
+    currentScale += 0.1;
+  } else {
+    currentScale -= 0.1;
+  }
+  
+  // Limit scale
+  currentScale = Math.max(0.5, Math.min(3, currentScale));
+  
+  // Apply new scale
+  svg.style.transform = `scale(${currentScale})`;
+}
+
+// Reset 2D view
+function resetView2D() {
+  const svg = document.querySelector('#toolpathVisualization svg');
+  if (svg) {
+    svg.style.transform = 'scale(1)';
+  }
+}
+
+// Toggle sync views
+function toggleSyncViews() {
+  const isActive = syncViewsBtn.classList.toggle('active');
+  
+  if (isActive) {
+    syncViewsBtn.style.backgroundColor = 'var(--primary-color)';
+    syncViewsBtn.style.color = 'white';
+  } else {
+    syncViewsBtn.style.backgroundColor = '';
+    syncViewsBtn.style.color = '';
+  }
+}
+
+// Timeline simulation controls
+function startSimulation() {
+  if (isSimulating) return;
+  
+  isSimulating = true;
+  playBtn.disabled = true;
+  pauseBtn.disabled = false;
+  stopBtn.disabled = false;
+  
+  simulationSpeed = parseFloat(speedSelect.value);
+  
+  simulationTimer = setInterval(() => {
+    currentSimulationStep += 1 * simulationSpeed;
+    
+    if (currentSimulationStep > 100) {
+      stopSimulation();
+      return;
+    }
+    
+    timelineSlider.value = currentSimulationStep;
+    updateTimeDisplay();
+    
+    // Here would be code to update the visualization based on timeline position
+  }, 100);
+}
+
+function pauseSimulation() {
+  if (!isSimulating) return;
+  
+  isSimulating = false;
+  clearInterval(simulationTimer);
+  
+  playBtn.disabled = false;
+  pauseBtn.disabled = true;
+}
+
+function stopSimulation() {
+  if (simulationTimer) {
+    clearInterval(simulationTimer);
+  }
+  
+  isSimulating = false;
+  currentSimulationStep = 0;
+  timelineSlider.value = 0;
+  updateTimeDisplay();
+  
+  playBtn.disabled = false;
+  pauseBtn.disabled = true;
+  stopBtn.disabled = true;
+  
+  // Reset visualization to initial state
+}
+
+function updateSimulationSpeed() {
+  simulationSpeed = parseFloat(speedSelect.value);
+}
+
+function handleTimelineChange() {
+  currentSimulationStep = parseInt(timelineSlider.value);
+  updateTimeDisplay();
+  
+  // Update visualization based on timeline position
+}
+
+function updateTimeDisplay() {
+  if (!currentGCode || !currentGCode.estimatedTime) return;
+  
+  const totalSeconds = currentGCode.estimatedTime;
+  const currentSeconds = (currentSimulationStep / 100) * totalSeconds;
+  
+  currentTimeDisplay.textContent = formatTime(currentSeconds);
+  totalTimeDisplay.textContent = formatTime(totalSeconds);
 }
 
 // Handle loading an SVG file
@@ -170,13 +432,14 @@ async function handleLoadSVG() {
     toolpathData = null;
     currentGCode = null;
     
+    // Hide visualization dashboard
+    visualizationDashboard.classList.add('hidden');
+    
     // Update UI
     fileInfo.textContent = `File: ${currentSVG.filename} (${currentSVG.width}x${currentSVG.height})`;
     svgPreview.innerHTML = currentSVG.rawData;
     convertBtn.disabled = false;
     saveGcodeBtn.disabled = true;
-    toggleDebugBtn.disabled = true;
-    debugPanel.classList.remove('visible');
     statusText.textContent = 'SVG loaded successfully';
     
     // Save original SVG for debugging
@@ -248,106 +511,145 @@ async function handleConvertSVG() {
     currentGCode = await window.api.convertSVGToGCode(currentSVG.rawData, config);
     console.log("Received GCode result with", 
       currentGCode.commands ? currentGCode.commands.length : 0, "commands",
-      "and metadata:", JSON.stringify(currentGCode.metadata, null, 2));
+      currentGCode.header ? currentGCode.header.length : 0, "header lines",
+      currentGCode.footer ? currentGCode.footer.length : 0, "footer lines");
+    
+    // Get processed data and toolpath data for visualization
+    console.log("Getting processed data...");
+    processedData = await window.api.getProcessedData(currentSVG.rawData, config);
+    
+    console.log("Getting toolpath data...");
+    toolpathData = await window.api.getToolpathData(processedData, config);
+    
+    // Generate visualizations
+    console.log("Generating visualizations...");
+    const svgVisualization = await window.api.getSVGVisualization(processedData, currentSVG.rawData, config);
+    const toolpathVisualizationHtml = await window.api.getToolpathVisualization(toolpathData, config);
+    const gcodeVisualization = await window.api.getGCodeVisualization(currentGCode, toolpathData, config);
+    
+    // Save visualizations to debug output
+    await saveVisualizationToFile(extractSvg(svgVisualization), 'debug_output/svg_visualization.svg');
+    await saveVisualizationToFile(extractSvg(toolpathVisualizationHtml), 'debug_output/toolpath_visualization.svg');
+    await saveVisualizationToFile(extractSvg(gcodeVisualization), 'debug_output/gcode_visualization.svg');
+    
+    // Save toolpath data for debugging
+    await window.api.saveDebugFile(
+      JSON.stringify(toolpathData, null, 2),
+      'debug_output/toolpath_data.json'
+    );
     
     // Save GCode for debugging
-    const gcodeText = [
+    const debugGCode = [
       ...currentGCode.header,
       ...currentGCode.commands,
       ...currentGCode.footer
     ].join('\n');
-    await window.api.saveDebugFile(gcodeText, 'debug_output/debug_gcode.nc');
-    console.log("Saved GCode to debug_output/debug_gcode.nc");
+    await window.api.saveDebugFile(debugGCode, 'debug_output/debug_gcode.nc');
     
-    // Get and save processed data for debugging
-    console.log("Getting processed SVG data");
-    if (!processedData) {
-      processedData = await window.api.getProcessedData(currentSVG.rawData, config);
-    }
+    // Update visualizations
+    toolpathVisualization.innerHTML = toolpathVisualizationHtml;
+    gcode3DVisualization.innerHTML = gcodeVisualization;
     
-    console.log("Getting toolpath data");
-    if (!toolpathData) {
-      toolpathData = await window.api.getToolpathData(processedData, config);
-    }
+    // Make visualization dashboard visible
+    visualizationDashboard.classList.remove('hidden');
     
-    // Save toolpath data as JSON for debugging
-    await window.api.saveDebugFile(JSON.stringify(toolpathData, null, 2), 'debug_output/toolpath_data.json');
-    console.log("Saved toolpath data with", 
-      toolpathData.toolpaths ? toolpathData.toolpaths.length : 0, 
-      "toolpaths to debug_output/toolpath_data.json");
+    // Update metadata
+    updateMetadata();
     
-    // Debug the toolpaths
-    if (toolpathData.toolpaths) {
-      toolpathData.toolpaths.forEach((toolpath, index) => {
-        console.log(`Toolpath ${index + 1}: ${toolpath.points ? toolpath.points.length : 0} points, depth: ${toolpath.depth}`);
-      });
-    }
+    // Initialize timeline
+    initializeTimeline();
     
-    // Get and save visualizations
-    console.log("Generating visualizations");
-    const svgVisualization = await window.api.getSVGVisualization(processedData, currentSVG.rawData, config);
-    const toolpathVisualization = await window.api.getToolpathVisualization(toolpathData, config);
-    const gcodeVisualization = await window.api.getGCodeVisualization(currentGCode, toolpathData, config);
-    
-    // Extract just the SVG part from the HTML wrapper
-    const extractSvg = (html) => {
-      const match = html.match(/<svg[\s\S]*?<\/svg>/);
-      return match ? match[0] : html;
-    };
-    
-    await window.api.saveDebugFile(extractSvg(svgVisualization), 'debug_output/svg_visualization.svg');
-    await window.api.saveDebugFile(extractSvg(toolpathVisualization), 'debug_output/toolpath_visualization.svg');
-    
-    // Check if we have a valid SVG match in gcodeVisualization
-    const gcodeVisMatch = gcodeVisualization.match(/<svg[\s\S]*?<\/svg>/);
-    if (gcodeVisMatch) {
-      await window.api.saveDebugFile(gcodeVisMatch[0], 'debug_output/gcode_visualization.svg');
-    } else {
-      console.error("Could not extract SVG from GCode visualization");
-      await window.api.saveDebugFile(gcodeVisualization, 'debug_output/gcode_visualization_raw.html');
-    }
-    
-    console.log("Saved visualizations to debug_output/");
-    
-    // Display GCode preview
-    displayGCodePreview();
-    console.log("Updated GCode preview");
-    
-    // Enable save and debug buttons
+    // Enable save button
     saveGcodeBtn.disabled = false;
-    toggleDebugBtn.disabled = false;
     
     statusText.textContent = 'Conversion complete';
-    console.log("=== Conversion completed successfully ===");
-    
   } catch (error) {
-    console.error("Conversion error:", error);
+    console.error('Error converting SVG:', error);
     statusText.textContent = `Error: ${error.message}`;
     convertBtn.disabled = false;
   }
 }
 
-// Function to save visualization to a file
+// Extract SVG content from HTML
+const extractSvg = (html) => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const svgElement = doc.querySelector('svg');
+  
+  if (svgElement) {
+    return svgElement.outerHTML;
+  }
+  
+  return '';
+};
+
+// Save visualization to file
 async function saveVisualizationToFile(visualizationHtml, filename) {
   try {
-    // Extract the SVG part from the HTML
-    const svgMatch = visualizationHtml.match(/<svg[\s\S]*?<\/svg>/);
-    
-    if (svgMatch) {
-      await window.api.saveDebugFile(svgMatch[0], filename);
-      console.log(`Saved visualization to ${filename}`);
-      return true;
-    } else {
-      console.error('Could not extract SVG from visualization HTML');
-      return false;
+    if (!visualizationHtml) {
+      console.warn(`No visualization HTML to save to ${filename}`);
+      return;
     }
+    
+    await window.api.saveDebugFile(visualizationHtml, filename);
+    console.log(`Saved visualization to ${filename}`);
   } catch (error) {
-    console.error('Error saving visualization:', error);
-    return false;
+    console.error(`Error saving visualization to ${filename}:`, error);
   }
 }
 
-// Update config with form values
+// Update metadata display in the UI
+function updateMetadata() {
+  if (!currentGCode || !toolpathData) return;
+  
+  // Estimated time
+  estimatedTime.textContent = formatTime(currentGCode.estimatedTime || 0);
+  
+  // Command count
+  commandCount.textContent = currentGCode.commands ? currentGCode.commands.length.toString() : '0';
+  
+  // Depth range
+  const minDepth = config.grayscaleMapping.minDepth;
+  const maxDepth = config.grayscaleMapping.maxDepth;
+  depthRange.textContent = `${minDepth} - ${maxDepth} mm`;
+  
+  // Calculate cutting distance (estimation)
+  let totalDistance = 0;
+  if (toolpathData && toolpathData.toolpaths) {
+    toolpathData.toolpaths.forEach(path => {
+      if (path.points && path.points.length > 1) {
+        for (let i = 1; i < path.points.length; i++) {
+          const dx = path.points[i].x - path.points[i-1].x;
+          const dy = path.points[i].y - path.points[i-1].y;
+          totalDistance += Math.sqrt(dx*dx + dy*dy);
+        }
+      }
+    });
+  }
+  
+  cuttingDistance.textContent = totalDistance < 1000 
+    ? `${totalDistance.toFixed(1)} mm` 
+    : `${(totalDistance / 1000).toFixed(2)} m`;
+}
+
+// Initialize timeline with estimated time
+function initializeTimeline() {
+  if (!currentGCode) return;
+  
+  const totalTime = currentGCode.estimatedTime || 0;
+  timelineSlider.value = 0;
+  currentSimulationStep = 0;
+  
+  currentTimeDisplay.textContent = '00:00';
+  totalTimeDisplay.textContent = formatTime(totalTime);
+  
+  // Reset controls
+  playBtn.disabled = false;
+  pauseBtn.disabled = true;
+  stopBtn.disabled = true;
+}
+
+// Update config from form
 function updateConfigFromForm() {
   config.grayscaleMapping.minDepth = parseFloat(minDepthInput.value);
   config.grayscaleMapping.maxDepth = parseFloat(maxDepthInput.value);
@@ -355,131 +657,6 @@ function updateConfigFromForm() {
   config.machine.feedRates.default = parseInt(feedRateInput.value);
   config.machine.feedRates.plunge = parseInt(plungeRateInput.value);
   config.machine.safeHeight = parseFloat(safeHeightInput.value);
-}
-
-// Display GCode preview
-function displayGCodePreview() {
-  if (!currentGCode) return;
-  
-  // Create tabs for different views
-  const tabContainer = document.createElement('div');
-  tabContainer.className = 'preview-tabs';
-  
-  const gcodeLinkElem = document.createElement('a');
-  gcodeLinkElem.innerText = 'GCode';
-  gcodeLinkElem.href = '#';
-  gcodeLinkElem.className = 'active';
-  
-  const toolpathLinkElem = document.createElement('a');
-  toolpathLinkElem.innerText = 'Toolpath';
-  toolpathLinkElem.href = '#';
-  
-  const gcodePath3DLinkElem = document.createElement('a');
-  gcodePath3DLinkElem.innerText = '3D Path';
-  gcodePath3DLinkElem.href = '#';
-  
-  tabContainer.appendChild(gcodeLinkElem);
-  tabContainer.appendChild(toolpathLinkElem);
-  tabContainer.appendChild(gcodePath3DLinkElem);
-  
-  // Create container for tab content
-  const contentContainer = document.createElement('div');
-  contentContainer.className = 'preview-content';
-  
-  // Create GCode text preview
-  const codePreview = document.createElement('pre');
-  codePreview.className = 'gcode-text';
-  
-  // Display just a portion of the GCode for performance
-  const gcodeLines = [
-    ...currentGCode.header,
-    '...',
-    ...currentGCode.commands.slice(0, 20),
-    '...',
-    ...currentGCode.footer
-  ];
-  
-  codePreview.textContent = gcodeLines.join('\n');
-  contentContainer.appendChild(codePreview);
-  
-  // Add metadata display
-  const metadata = document.createElement('div');
-  metadata.className = 'gcode-metadata';
-  metadata.innerHTML = `
-    <p>Estimated time: ${formatTime(currentGCode.estimatedTime)}</p>
-    <p>Commands: ${currentGCode.commands.length}</p>
-    <p>Max depth: ${currentGCode.metadata.maxDepth}mm</p>
-  `;
-  
-  // Clear previous content and add new elements
-  gcodePreview.innerHTML = '';
-  gcodePreview.appendChild(tabContainer);
-  gcodePreview.appendChild(contentContainer);
-  gcodePreview.appendChild(metadata);
-  
-  // Add tab click handlers
-  gcodeLinkElem.addEventListener('click', (e) => {
-    e.preventDefault();
-    gcodeLinkElem.className = 'active';
-    toolpathLinkElem.className = '';
-    gcodePath3DLinkElem.className = '';
-    contentContainer.innerHTML = '';
-    contentContainer.appendChild(codePreview);
-  });
-  
-  toolpathLinkElem.addEventListener('click', async (e) => {
-    e.preventDefault();
-    gcodeLinkElem.className = '';
-    toolpathLinkElem.className = 'active';
-    gcodePath3DLinkElem.className = '';
-    
-    contentContainer.innerHTML = 'Loading toolpath visualization...';
-    
-    try {
-      // Request toolpath data and visualization from main process
-      if (!toolpathData) {
-        // First get processed data if needed
-        if (!processedData) {
-          processedData = await window.api.getProcessedData(currentSVG.rawData, config);
-        }
-        // Then get toolpath data from processed data
-        toolpathData = await window.api.getToolpathData(processedData, config);
-      }
-      
-      // Generate visualization
-      const visualizationHtml = await window.api.getToolpathVisualization(toolpathData, config);
-      contentContainer.innerHTML = visualizationHtml;
-    } catch (error) {
-      contentContainer.innerHTML = `Error generating visualization: ${error.message}`;
-    }
-  });
-  
-  gcodePath3DLinkElem.addEventListener('click', async (e) => {
-    e.preventDefault();
-    gcodeLinkElem.className = '';
-    toolpathLinkElem.className = '';
-    gcodePath3DLinkElem.className = 'active';
-    
-    contentContainer.innerHTML = 'Loading 3D path visualization...';
-    
-    try {
-      // Request toolpath data if we don't already have it
-      if (!toolpathData) {
-        // First get processed data if needed
-        if (!processedData) {
-          processedData = await window.api.getProcessedData(currentSVG.rawData, config);
-        }
-        // Then get toolpath data from processed data
-        toolpathData = await window.api.getToolpathData(processedData, config);
-      }
-      
-      // Generate 3D visualization
-      const visualizationHtml = await window.api.getGCodeVisualization(currentGCode, toolpathData, config);
-      contentContainer.innerHTML = visualizationHtml;
-    } catch (error) {
-      contentContainer.innerHTML = `Error generating 3D path visualization: ${error.message}`;
-    }
-  });
 }
 
 // Format time in seconds to minutes and seconds
@@ -510,15 +687,6 @@ function handleConversionComplete() {
   
   // Re-enable the convert button
   convertBtn.disabled = false;
-  
-  // Display GCode preview if we have currentGCode
-  if (currentGCode) {
-    const commandCount = currentGCode.commands ? currentGCode.commands.length : 0;
-    const estimatedTime = currentGCode.estimatedTime ? formatTime(currentGCode.estimatedTime) : 'N/A';
-    
-    statusText.textContent = `Conversion complete: ${commandCount} commands (Est. time: ${estimatedTime})`;
-    displayGCodePreview();
-  }
 }
 
 // Handle errors

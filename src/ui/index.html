@@ -5,78 +5,187 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SVG to GCode Converter</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
   <div class="app-container">
     <header>
       <h1>SVG to GCode Converter</h1>
       <div class="toolbar">
-        <button id="loadSvgBtn">Load SVG</button>
-        <button id="saveGcodeBtn" disabled>Save GCode</button>
-        <button id="settingsBtn">Settings</button>
+        <button id="loadSvgBtn" class="btn-primary"><i class="fas fa-file-import"></i> Load SVG</button>
+        <button id="saveGcodeBtn" class="btn-success" disabled><i class="fas fa-download"></i> Save GCode</button>
+        <button id="settingsBtn" class="btn-secondary"><i class="fas fa-cog"></i> Settings</button>
+        <button id="themeToggleBtn" class="btn-icon"><i class="fas fa-moon"></i></button>
       </div>
     </header>
     
     <main>
-      <div class="panels">
-        <div class="panel svg-panel">
-          <h2>
-            SVG Preview
-          </h2>
-          <div id="svgPreview" class="preview-container">
-            <div class="placeholder">No SVG loaded</div>
-          </div>
-          <div class="file-info">
-            <span id="fileInfo">No file loaded</span>
-          </div>
-        </div>
-        
-        <div class="panel gcode-panel">
-          <h2>
-            GCode Preview
-            <div class="panel-actions">
-              <button id="toggleDebugBtn" disabled>Show Debug Info</button>
-            </div>
-          </h2>
-          <div id="gcodePreview" class="preview-container">
-            <div class="placeholder">No GCode generated</div>
-          </div>
+      <div class="visualization-header">
+        <h2>Original SVG</h2>
+        <div class="file-info">
+          <span id="fileInfo">No file loaded</span>
         </div>
       </div>
       
-      <div class="controls">
-        <div class="depth-mapping">
-          <h3>Grayscale to Depth Mapping</h3>
-          <div class="form-group">
-            <label for="minDepth">Min Depth (mm):</label>
-            <input type="number" id="minDepth" value="0.5" min="0" step="0.1">
+      <div class="svg-preview-container">
+        <div id="svgPreview" class="preview-container">
+          <div class="placeholder">No SVG loaded</div>
+        </div>
+      </div>
+      
+      <div class="control-panels">
+        <div class="depth-mapping card">
+          <div class="card-header">
+            <h3><i class="fas fa-layer-group"></i> Grayscale to Depth Mapping</h3>
           </div>
-          <div class="form-group">
-            <label for="maxDepth">Max Depth (mm):</label>
-            <input type="number" id="maxDepth" value="5" min="0" step="0.1">
+          <div class="card-content">
+            <div class="form-group">
+              <label for="minDepth">Min Depth (mm):</label>
+              <input type="number" id="minDepth" value="0.5" min="0" step="0.1">
+            </div>
+            <div class="form-group">
+              <label for="maxDepth">Max Depth (mm):</label>
+              <input type="number" id="maxDepth" value="5" min="0" step="0.1">
+            </div>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="invertMapping">
+                Invert Mapping
+              </label>
+            </div>
           </div>
-          <div class="form-group">
-            <label>
-              <input type="checkbox" id="invertMapping">
-              Invert Mapping
-            </label>
-          </div>
-          <button id="convertBtn" disabled>Convert</button>
         </div>
         
-        <div class="machine-settings">
-          <h3>Machine Settings</h3>
-          <div class="form-group">
-            <label for="feedRate">Feed Rate (mm/min):</label>
-            <input type="number" id="feedRate" value="800" min="1">
+        <div class="machine-settings card">
+          <div class="card-header">
+            <h3><i class="fas fa-cogs"></i> Machine Settings</h3>
           </div>
-          <div class="form-group">
-            <label for="plungeRate">Plunge Rate (mm/min):</label>
-            <input type="number" id="plungeRate" value="300" min="1">
+          <div class="card-content">
+            <div class="form-group">
+              <label for="feedRate">Feed Rate (mm/min):</label>
+              <input type="number" id="feedRate" value="800" min="1">
+            </div>
+            <div class="form-group">
+              <label for="plungeRate">Plunge Rate (mm/min):</label>
+              <input type="number" id="plungeRate" value="300" min="1">
+            </div>
+            <div class="form-group">
+              <label for="safeHeight">Safe Height (mm):</label>
+              <input type="number" id="safeHeight" value="5" min="0" step="0.1">
+            </div>
           </div>
-          <div class="form-group">
-            <label for="safeHeight">Safe Height (mm):</label>
-            <input type="number" id="safeHeight" value="5" min="0" step="0.1">
+        </div>
+        
+        <div class="conversion-actions">
+          <button id="convertBtn" class="btn-primary btn-large" disabled><i class="fas fa-play"></i> Convert</button>
+        </div>
+      </div>
+      
+      <div id="visualizationDashboard" class="visualization-dashboard hidden">
+        <div class="dashboard-header">
+          <h2>Machining Visualization</h2>
+          <div class="view-controls">
+            <button id="syncViewsBtn" class="btn-icon" title="Sync Views"><i class="fas fa-link"></i></button>
+            <div class="toggle-group">
+              <button id="viewModeToggle" class="btn-toggle active" data-mode="side-by-side">
+                <i class="fas fa-columns"></i> Side by Side
+              </button>
+              <button id="viewModeToggle2D" class="btn-toggle" data-mode="2d-only">
+                <i class="fas fa-square"></i> 2D Only
+              </button>
+              <button id="viewModeToggle3D" class="btn-toggle" data-mode="3d-only">
+                <i class="fas fa-cube"></i> 3D Only
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="dual-visualization">
+          <div class="visualization-panel" id="toolpathPanel">
+            <div class="panel-header">
+              <h3>2D Toolpath</h3>
+              <div class="panel-actions">
+                <button class="btn-icon" id="zoomInBtn2D" title="Zoom In"><i class="fas fa-search-plus"></i></button>
+                <button class="btn-icon" id="zoomOutBtn2D" title="Zoom Out"><i class="fas fa-search-minus"></i></button>
+                <button class="btn-icon" id="resetViewBtn2D" title="Reset View"><i class="fas fa-home"></i></button>
+              </div>
+            </div>
+            <div id="toolpathVisualization" class="visualization-container">
+              <div class="placeholder">Processing toolpath...</div>
+            </div>
+          </div>
+          
+          <div class="visualization-panel" id="gcodePanel">
+            <div class="panel-header">
+              <h3>3D Visualization</h3>
+              <div class="panel-actions">
+                <div class="view-selector">
+                  <button class="view-btn active" id="viewTop" title="Top View"><i class="fas fa-arrow-down"></i></button>
+                  <button class="view-btn" id="viewFront" title="Front View"><i class="fas fa-arrow-right"></i></button>
+                  <button class="view-btn" id="viewSide" title="Side View"><i class="fas fa-arrow-left"></i></button>
+                  <button class="view-btn" id="viewIsometric" title="Isometric View"><i class="fas fa-cube"></i></button>
+                </div>
+              </div>
+            </div>
+            <div id="gcode3DVisualization" class="visualization-container">
+              <div class="placeholder">Processing 3D view...</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="timeline-container">
+          <div class="playback-controls">
+            <button id="playBtn" class="btn-icon"><i class="fas fa-play"></i></button>
+            <button id="pauseBtn" class="btn-icon" disabled><i class="fas fa-pause"></i></button>
+            <button id="stopBtn" class="btn-icon" disabled><i class="fas fa-stop"></i></button>
+            <select id="speedSelect" class="speed-selector">
+              <option value="0.5">0.5x</option>
+              <option value="1" selected>1x</option>
+              <option value="2">2x</option>
+              <option value="5">5x</option>
+            </select>
+          </div>
+          <div class="timeline">
+            <input type="range" id="timelineSlider" min="0" max="100" value="0">
+            <div class="timeline-labels">
+              <span>Start</span>
+              <span id="currentTimeDisplay">00:00</span>
+              <span id="totalTimeDisplay">00:00</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="metadata-dashboard">
+          <div class="metadata-card">
+            <div class="metadata-icon"><i class="fas fa-clock"></i></div>
+            <div class="metadata-content">
+              <div class="metadata-value" id="estimatedTime">--:--</div>
+              <div class="metadata-label">Estimated Time</div>
+            </div>
+          </div>
+          
+          <div class="metadata-card">
+            <div class="metadata-icon"><i class="fas fa-ruler"></i></div>
+            <div class="metadata-content">
+              <div class="metadata-value" id="cuttingDistance">-- mm</div>
+              <div class="metadata-label">Cutting Distance</div>
+            </div>
+          </div>
+          
+          <div class="metadata-card">
+            <div class="metadata-icon"><i class="fas fa-arrows-alt-v"></i></div>
+            <div class="metadata-content">
+              <div class="metadata-value" id="depthRange">-- mm</div>
+              <div class="metadata-label">Depth Range</div>
+            </div>
+          </div>
+          
+          <div class="metadata-card">
+            <div class="metadata-icon"><i class="fas fa-code"></i></div>
+            <div class="metadata-content">
+              <div class="metadata-value" id="commandCount">--</div>
+              <div class="metadata-label">Commands</div>
+            </div>
           </div>
         </div>
       </div>
@@ -131,8 +240,8 @@
       </div>
       
       <div class="button-group">
-        <button id="saveSettingsBtn">Save</button>
-        <button id="cancelSettingsBtn">Cancel</button>
+        <button id="saveSettingsBtn" class="btn-primary">Save</button>
+        <button id="cancelSettingsBtn" class="btn-secondary">Cancel</button>
       </div>
     </div>
   </div>
