@@ -1491,44 +1491,62 @@ class SVGProcessor {
   getGCodeVisualization(gcode, toolpathData, config) {
     console.log("Generating GCode 3D visualization...");
     
-    // If gcode is a string, parse it to extract commands
-    let gcodeLines = [];
-    if (typeof gcode === 'string') {
-      gcodeLines = gcode.split('\n');
-    } else if (gcode && gcode.commands) {
-      // For backward compatibility - if it's still the old object format
-      gcodeLines = [
-        ...(gcode.header || []), 
-        ...(gcode.commands || []), 
-        ...(gcode.footer || [])
-      ];
-    } else {
-      console.error("Invalid gcode format for visualization");
-      return "<svg width='300' height='200'><text x='10' y='100' fill='red'>Invalid GCode format</text></svg>";
-    }
-    
-    // Use the GCodeVisualizer to create a 3D visualization
     try {
-      // Create GCode visualizer instance
-      const GCodeVisualizer = require('./visualization/gcode-visualizer');
-      const visualizer = new GCodeVisualizer(config);
+      // If gcode is a string, parse it to extract commands
+      let gcodeLines = [];
+      if (typeof gcode === 'string') {
+        gcodeLines = gcode.split('\n');
+      } else if (gcode && gcode.commands) {
+        // For backward compatibility - if it's still the old object format
+        gcodeLines = [
+          ...(gcode.header || []), 
+          ...(gcode.commands || []), 
+          ...(gcode.footer || [])
+        ];
+      } else {
+        console.error("Invalid gcode format for visualization");
+        return "<svg width='300' height='200'><text x='10' y='100' fill='red'>Invalid GCode format</text></svg>";
+      }
       
-      // Create visualization data object with necessary fields
-      const gcodeData = {
-        commands: gcodeLines,
-        metadata: {
-          minDepth: config.grayscaleMapping.minDepth,
-          maxDepth: config.grayscaleMapping.maxDepth
-        },
-        estimatedTime: this._calculateEstimatedTime(toolpathData, config)
-      };
+      // Validate that we have GCode commands
+      if (!gcodeLines || gcodeLines.length === 0) {
+        console.error("No GCode commands to visualize");
+        return "<svg width='300' height='200'><text x='10' y='100' fill='red'>No GCode commands to visualize</text></svg>";
+      }
       
-      // Generate the visualization
-      return visualizer.generateGCodePreview(gcodeData, toolpathData);
+      // Ensure each command is a string
+      gcodeLines = gcodeLines.map(cmd => String(cmd || ''));
+      
+      // Use the GCodeVisualizer to create a 3D visualization
+      try {
+        // Create GCode visualizer instance
+        const GCodeVisualizer = require('./visualization/gcode-visualizer');
+        const visualizer = new GCodeVisualizer(config || {
+          grayscaleMapping: { minDepth: 0.5, maxDepth: 5 }
+        });
+        
+        // Create visualization data object with necessary fields
+        const gcodeData = {
+          commands: gcodeLines,
+          metadata: {
+            minDepth: config && config.grayscaleMapping ? config.grayscaleMapping.minDepth : 0.5,
+            maxDepth: config && config.grayscaleMapping ? config.grayscaleMapping.maxDepth : 5
+          },
+          estimatedTime: this._calculateEstimatedTime(toolpathData, config)
+        };
+        
+        // Generate the visualization
+        return visualizer.generateGCodePreview(gcodeData, toolpathData);
+      } catch (error) {
+        console.error("Error generating 3D GCode visualization:", error);
+        return `<svg width='300' height='200'>
+          <text x='10' y='100' fill='red'>Error generating 3D visualization: ${error.message}</text>
+        </svg>`;
+      }
     } catch (error) {
-      console.error("Error generating 3D GCode visualization:", error);
+      console.error("Error preparing data for GCode visualization:", error);
       return `<svg width='300' height='200'>
-        <text x='10' y='100' fill='red'>Error generating 3D visualization: ${error.message}</text>
+        <text x='10' y='100' fill='red'>Error preparing data: ${error.message}</text>
       </svg>`;
     }
   }

@@ -81,60 +81,71 @@ class GCodeVisualizer {
     // Parse each command
     commands.forEach(cmd => {
       // Skip comments and empty lines
-      if (cmd.startsWith('(') || cmd.trim() === '') {
+      if (!cmd || cmd.startsWith('(') || cmd.trim() === '') {
         return;
       }
       
-      // New path start with G0 Z movement to safe height
-      if (cmd.startsWith('G0 Z')) {
-        if (currentPath && currentPath.points.length > 0) {
-          toolpaths.push(currentPath);
-        }
-        currentPath = { points: [], rapid: true };
-        currentZ = parseFloat(cmd.match(/Z([-\d.]+)/)[1]);
-      }
-      // Rapid move to starting position
-      else if (cmd.startsWith('G0 X') || cmd.startsWith('G0 Y')) {
-        if (!currentPath) {
+      try {
+        // New path start with G0 Z movement to safe height
+        if (cmd.startsWith('G0 Z')) {
+          if (currentPath && currentPath.points.length > 0) {
+            toolpaths.push(currentPath);
+          }
           currentPath = { points: [], rapid: true };
+          const zMatch = cmd.match(/Z([-\d.]+)/);
+          if (zMatch && zMatch[1]) {
+            currentZ = parseFloat(zMatch[1]);
+          }
         }
-        
-        // Extract coordinates
-        const xMatch = cmd.match(/X([-\d.]+)/);
-        const yMatch = cmd.match(/Y([-\d.]+)/);
-        
-        if (xMatch) currentX = parseFloat(xMatch[1]);
-        if (yMatch) currentY = parseFloat(yMatch[1]);
-        
-        currentPath.points.push({ x: currentX, y: currentY, z: currentZ });
-      }
-      // Plunge movement
-      else if (cmd.startsWith('G1 Z')) {
-        if (!currentPath) {
-          currentPath = { points: [], rapid: false };
+        // Rapid move to starting position
+        else if (cmd.startsWith('G0 X') || cmd.startsWith('G0 Y')) {
+          if (!currentPath) {
+            currentPath = { points: [], rapid: true };
+          }
+          
+          // Extract coordinates
+          const xMatch = cmd.match(/X([-\d.]+)/);
+          const yMatch = cmd.match(/Y([-\d.]+)/);
+          
+          if (xMatch && xMatch[1]) currentX = parseFloat(xMatch[1]);
+          if (yMatch && yMatch[1]) currentY = parseFloat(yMatch[1]);
+          
+          currentPath.points.push({ x: currentX, y: currentY, z: currentZ });
         }
-        currentPath.rapid = false;
-        
-        currentZ = parseFloat(cmd.match(/Z([-\d.]+)/)[1]);
-        currentPath.points.push({ x: currentX, y: currentY, z: currentZ });
-      }
-      // Linear cutting movement
-      else if (cmd.startsWith('G1 X') || cmd.startsWith('G1 Y')) {
-        if (!currentPath) {
-          currentPath = { points: [], rapid: false };
+        // Plunge movement
+        else if (cmd.startsWith('G1 Z')) {
+          if (!currentPath) {
+            currentPath = { points: [], rapid: false };
+          }
+          currentPath.rapid = false;
+          
+          const zMatch = cmd.match(/Z([-\d.]+)/);
+          if (zMatch && zMatch[1]) {
+            currentZ = parseFloat(zMatch[1]);
+          }
+          currentPath.points.push({ x: currentX, y: currentY, z: currentZ });
         }
-        currentPath.rapid = false;
-        
-        // Extract coordinates
-        const xMatch = cmd.match(/X([-\d.]+)/);
-        const yMatch = cmd.match(/Y([-\d.]+)/);
-        const zMatch = cmd.match(/Z([-\d.]+)/);
-        
-        if (xMatch) currentX = parseFloat(xMatch[1]);
-        if (yMatch) currentY = parseFloat(yMatch[1]);
-        if (zMatch) currentZ = parseFloat(zMatch[1]);
-        
-        currentPath.points.push({ x: currentX, y: currentY, z: currentZ });
+        // Linear cutting movement
+        else if (cmd.startsWith('G1 X') || cmd.startsWith('G1 Y')) {
+          if (!currentPath) {
+            currentPath = { points: [], rapid: false };
+          }
+          currentPath.rapid = false;
+          
+          // Extract coordinates
+          const xMatch = cmd.match(/X([-\d.]+)/);
+          const yMatch = cmd.match(/Y([-\d.]+)/);
+          const zMatch = cmd.match(/Z([-\d.]+)/);
+          
+          if (xMatch && xMatch[1]) currentX = parseFloat(xMatch[1]);
+          if (yMatch && yMatch[1]) currentY = parseFloat(yMatch[1]);
+          if (zMatch && zMatch[1]) currentZ = parseFloat(zMatch[1]);
+          
+          currentPath.points.push({ x: currentX, y: currentY, z: currentZ });
+        }
+      } catch (error) {
+        console.error(`Error parsing GCode command: ${cmd}`, error);
+        // Continue with next command
       }
     });
     
