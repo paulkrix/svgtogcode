@@ -20,7 +20,9 @@
     <main>
       <div class="panels">
         <div class="panel svg-panel">
-          <h2>SVG Preview</h2>
+          <h2>
+            SVG Preview
+          </h2>
           <div id="svgPreview" class="preview-container">
             <div class="placeholder">No SVG loaded</div>
           </div>
@@ -30,7 +32,12 @@
         </div>
         
         <div class="panel gcode-panel">
-          <h2>GCode Preview</h2>
+          <h2>
+            GCode Preview
+            <div class="panel-actions">
+              <button id="toggleDebugBtn" disabled>Show Debug Info</button>
+            </div>
+          </h2>
           <div id="gcodePreview" class="preview-container">
             <div class="placeholder">No GCode generated</div>
           </div>
@@ -72,6 +79,20 @@
             <input type="number" id="safeHeight" value="5" min="0" step="0.1">
           </div>
         </div>
+      </div>
+      
+      <div id="debugPanel" class="debug-panel">
+        <h3>Debug Information</h3>
+        <p>Debug files have been saved to the debug_output/ directory:</p>
+        <ul>
+          <li>Original SVG: debug_output/original_svg.svg</li>
+          <li>GCode: debug_output/debug_gcode.nc</li>
+          <li>SVG Visualization: debug_output/svg_visualization.svg</li>
+          <li>Toolpath Visualization: debug_output/toolpath_visualization.svg</li>
+          <li>GCode Path Visualization: debug_output/gcode_visualization.svg</li>
+          <li>Toolpath Data: debug_output/toolpath_data.json</li>
+        </ul>
+        <p>Use these files to compare between the input and output to identify issues.</p>
       </div>
     </main>
     

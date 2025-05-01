@@ -26,15 +26,22 @@ class SVGVisualizer {
     const { minDepth, maxDepth } = this.config.grayscaleMapping;
     const depthRange = maxDepth - minDepth;
     
+    // Add padding to viewBox for better visualization
+    const padding = 20;
+    const viewBoxMinX = svgInput.viewBox.minX - padding;
+    const viewBoxMinY = svgInput.viewBox.minY - padding;
+    const viewBoxWidth = svgInput.viewBox.width + (padding * 2);
+    const viewBoxHeight = svgInput.viewBox.height + (padding * 2);
+    
     // Create SVG element
     let svg = `<svg 
       width="100%" 
       height="100%" 
-      viewBox="${svgInput.viewBox.minX} ${svgInput.viewBox.minY} ${svgInput.viewBox.width} ${svgInput.viewBox.height}"
+      viewBox="${viewBoxMinX} ${viewBoxMinY} ${viewBoxWidth} ${viewBoxHeight}"
       xmlns="http://www.w3.org/2000/svg">
       <style>
-        .depth-path { stroke-width: 1; fill-opacity: 0.7; }
-        .depth-label { font-size: 8px; fill: black; }
+        .depth-path { stroke-width: 1; fill-opacity: 0.7; stroke: #333; stroke-opacity: 0.5; }
+        .depth-label { font-size: 10px; fill: black; font-weight: bold; }
       </style>`;
     
     // Add a legend
@@ -103,8 +110,8 @@ class SVGVisualizer {
    * @returns {string} SVG for legend
    */
   _generateLegend(minDepth, maxDepth) {
-    const legendWidth = 100;
-    const legendHeight = 15;
+    const legendWidth = 120;
+    const legendHeight = 20;
     const legendX = 10;
     const legendY = 10;
     const steps = 5;
@@ -125,9 +132,9 @@ class SVGVisualizer {
     
     // Add text labels
     legend += `
-      <text x="0" y="${legendHeight + 10}" font-size="8">${minDepth}mm</text>
-      <text x="${legendWidth}" y="${legendHeight + 10}" text-anchor="end" font-size="8">${maxDepth}mm</text>
-      <text x="${legendWidth/2}" y="${legendHeight + 10}" text-anchor="middle" font-size="8">Depth</text>
+      <text x="0" y="${legendHeight + 12}" font-size="10">${minDepth}mm</text>
+      <text x="${legendWidth}" y="${legendHeight + 12}" text-anchor="end" font-size="10">${maxDepth}mm</text>
+      <text x="${legendWidth/2}" y="${legendHeight + 12}" text-anchor="middle" font-size="10">Depth</text>
     `;
     
     legend += '</g>';
@@ -159,7 +166,7 @@ class SVGVisualizer {
     });
     
     // Add some padding
-    const padding = 10;
+    const padding = 20;
     minX -= padding;
     minY -= padding;
     maxX += padding;
@@ -176,9 +183,13 @@ class SVGVisualizer {
       xmlns="http://www.w3.org/2000/svg">
       <style>
         .toolpath { fill: none; stroke-linecap: round; stroke-linejoin: round; }
-        .depth-indicator { font-size: 8px; fill: black; }
-        .origin { stroke: red; stroke-width: 1; }
+        .depth-indicator { font-size: 10px; fill: black; font-weight: bold; }
+        .origin { stroke: red; stroke-width: 1.5; }
+        .grid { stroke: #eee; stroke-width: 0.5; }
       </style>`;
+    
+    // Add grid
+    svg += this._generateGrid(minX, minY, maxX, maxY);
     
     // Add depth legend
     svg += this._generateLegend(metadata.minDepth, metadata.maxDepth);
@@ -194,7 +205,7 @@ class SVGVisualizer {
       // Calculate color based on depth
       const normalizedDepth = (depth - metadata.minDepth) / (metadata.maxDepth - metadata.minDepth);
       const color = this._getDepthColor(normalizedDepth);
-      const strokeWidth = 1 + normalizedDepth * 2; // Thicker lines for deeper cuts
+      const strokeWidth = 2 + normalizedDepth * 2; // Thicker lines for deeper cuts
       
       // Special handling for lines - use straight line segments
       if (type === 'line') {
@@ -224,7 +235,7 @@ class SVGVisualizer {
       <g class="origin">
         <line x1="-10" y1="0" x2="10" y2="0" />
         <line x1="0" y1="-10" x2="0" y2="10" />
-        <circle cx="0" cy="0" r="2" fill="red" />
+        <circle cx="0" cy="0" r="3" fill="red" />
       </g>
     `;
     
@@ -232,6 +243,33 @@ class SVGVisualizer {
     svg += '</svg>';
     
     return svg;
+  }
+  
+  /**
+   * Generate grid lines for reference
+   * @param {number} minX - Left bound
+   * @param {number} minY - Top bound
+   * @param {number} maxX - Right bound
+   * @param {number} maxY - Bottom bound
+   * @returns {string} SVG markup for grid
+   */
+  _generateGrid(minX, minY, maxX, maxY) {
+    // Create grid with 10mm spacing
+    const spacing = 10;
+    let grid = `<g class="grid">`;
+    
+    // Vertical lines
+    for (let x = Math.floor(minX / spacing) * spacing; x <= Math.ceil(maxX / spacing) * spacing; x += spacing) {
+      grid += `<line x1="${x}" y1="${minY}" x2="${x}" y2="${maxY}" />`;
+    }
+    
+    // Horizontal lines
+    for (let y = Math.floor(minY / spacing) * spacing; y <= Math.ceil(maxY / spacing) * spacing; y += spacing) {
+      grid += `<line x1="${minX}" y1="${y}" x2="${maxX}" y2="${y}" />`;
+    }
+    
+    grid += `</g>`;
+    return grid;
   }
 }
 

@@ -6,6 +6,8 @@
 
 const { JSDOM } = require('jsdom');
 const svgParser = require('svg-parser');
+const { createReadStream } = require('fs');
+const { parseStringPromise } = require('xml2js');
 
 /**
  * Parses SVG content and extracts necessary information
@@ -38,6 +40,9 @@ class SVGParser {
     // Parse color information
     const colorData = this._parseColorData(svgElement);
     
+    // Clean up DOM after use to free memory
+    dom.window.close();
+    
     return {
       width,
       height,
@@ -45,6 +50,254 @@ class SVGParser {
       paths,
       colorData
     };
+  }
+
+  /**
+   * Parse a large SVG file using streaming and chunking for memory efficiency
+   * @param {string} filePath - Path to the SVG file
+   * @returns {Promise<Object>} Parsed SVG data
+   */
+  static async parseFile(filePath) {
+    return new Promise((resolve, reject) => {
+      let chunks = [];
+      
+      const readStream = createReadStream(filePath, { encoding: 'utf8' });
+      
+      readStream.on('data', (chunk) => {
+        chunks.push(chunk);
+      });
+      
+      readStream.on('end', async () => {
+        try {
+          const svgString = chunks.join('');
+          chunks = null; // Free memory
+          
+          // For extremely large files, use XML streaming parser instead of DOM
+          if (svgString.length > 10 * 1024 * 1024) { // If > 10MB
+            const result = await this._parseWithXml2js(svgString);
+            resolve(result);
+          } else {
+            const result = this.parse(svgString);
+            resolve(result);
+          }
+        } catch (error) {
+          reject(error);
+        }
+      });
+      
+      readStream.on('error', (error) => {
+        reject(error);
+      });
+    });
+  }
+  
+  /**
+   * Parse SVG using xml2js for better memory efficiency with large files
+   * @param {string} svgString - SVG content
+   * @returns {Promise<Object>} Parsed SVG data
+   */
+  static async _parseWithXml2js(svgString) {
+    try {
+      const result = await parseStringPromise(svgString, {
+        trim: true,
+        explicitArray: false,
+        mergeAttrs: true
+      });
+      
+      if (!result.svg) {
+        throw new Error('Invalid SVG: No SVG element found');
+      }
+      
+      const svgElement = result.svg;
+      
+      // Extract metadata
+      const width = this._parseLength(svgElement.width || '100');
+      const height = this._parseLength(svgElement.height || '100');
+      
+      // Parse viewBox
+      const viewBox = this._parseViewBox(svgElement.viewBox);
+      
+      // Parse paths - handle xml2js format which is different from DOM
+      const paths = this._parsePathsFromXml2js(svgElement);
+      
+      // Parse color information
+      const colorData = this._parseColorDataFromXml2js(svgElement);
+      
+      return {
+        width,
+        height,
+        viewBox,
+        paths,
+        colorData
+      };
+    } catch (error) {
+      throw new Error(`Failed to parse SVG with xml2js: ${error.message}`);
+    }
+  }
+  
+  /**
+   * Parse paths from xml2js parsed object
+   * @param {Object} svgElement - xml2js parsed SVG element
+   * @returns {Array} Array of path objects
+   */
+  static _parsePathsFromXml2js(svgElement) {
+    const paths = [];
+    
+    // Helper to process groups of elements
+    const processElements = (elements, type) => {
+      if (!elements) return;
+      
+      // Convert to array if single element
+      const elemArray = Array.isArray(elements) ? elements : [elements];
+      
+      elemArray.forEach((element, index) => {
+        if (type === 'path' && element.d) {
+          paths.push({
+            type: 'path',
+            d: element.d,
+            fill: this._parseColor(element.fill),
+            stroke: this._parseColor(element.stroke),
+            id: element.id || `path_${paths.length}`
+          });
+        } else if (type === 'rect' && element.width && element.height) {
+          const x = parseFloat(element.x || 0);
+          const y = parseFloat(element.y || 0);
+          const width = parseFloat(element.width || 0);
+          const height = parseFloat(element.height || 0);
+          
+          if (width > 0 && height > 0) {
+            const d = `M${x},${y} h${width} v${height} h${-width} Z`;
+            paths.push({
+              type: 'rect',
+              d,
+              fill: this._parseColor(element.fill),
+              stroke: this._parseColor(element.stroke),
+              id: element.id || `rect_${paths.length}`
+            });
+          }
+        } else if (type === 'line' && element.x1 !== undefined) {
+          const x1 = parseFloat(element.x1 || 0);
+          const y1 = parseFloat(element.y1 || 0);
+          const x2 = parseFloat(element.x2 || 0);
+          const y2 = parseFloat(element.y2 || 0);
+          
+          const d = `M${x1},${y1} L${x2},${y2}`;
+          paths.push({
+            type: 'line',
+            d,
+            fill: null,
+            stroke: this._parseColor(element.stroke),
+            strokeWidth: parseFloat(element['stroke-width'] || 1),
+            id: element.id || `line_${paths.length}`
+          });
+        } else if (type === 'circle' && element.r) {
+          const cx = parseFloat(element.cx || 0);
+          const cy = parseFloat(element.cy || 0);
+          const r = parseFloat(element.r || 0);
+          
+          if (r > 0) {
+            paths.push({
+              type: 'circle',
+              cx, cy, r,
+              fill: this._parseColor(element.fill),
+              stroke: this._parseColor(element.stroke),
+              id: element.id || `circle_${paths.length}`
+            });
+          }
+        } else if (type === 'ellipse' && element.rx && element.ry) {
+          const cx = parseFloat(element.cx || 0);
+          const cy = parseFloat(element.cy || 0);
+          const rx = parseFloat(element.rx || 0);
+          const ry = parseFloat(element.ry || 0);
+          
+          if (rx > 0 && ry > 0) {
+            paths.push({
+              type: 'ellipse',
+              cx, cy, rx, ry,
+              fill: this._parseColor(element.fill),
+              stroke: this._parseColor(element.stroke),
+              id: element.id || `ellipse_${paths.length}`
+            });
+          }
+        }
+      });
+    };
+    
+    // Process each type of element
+    processElements(svgElement.path, 'path');
+    processElements(svgElement.rect, 'rect');
+    processElements(svgElement.line, 'line');
+    processElements(svgElement.circle, 'circle');
+    processElements(svgElement.ellipse, 'ellipse');
+    
+    // Process groups if they exist
+    if (svgElement.g) {
+      const groups = Array.isArray(svgElement.g) ? svgElement.g : [svgElement.g];
+      groups.forEach(group => {
+        processElements(group.path, 'path');
+        processElements(group.rect, 'rect');
+        processElements(group.line, 'line');
+        processElements(group.circle, 'circle');
+        processElements(group.ellipse, 'ellipse');
+      });
+    }
+    
+    return paths;
+  }
+  
+  /**
+   * Parse color data from xml2js parsed object
+   * @param {Object} svgElement - xml2js parsed SVG element
+   * @returns {Object} Color data mapping
+   */
+  static _parseColorDataFromXml2js(svgElement) {
+    const colorMap = {};
+    
+    // Helper to extract color info from an element
+    const extractColorInfo = (element, id, index) => {
+      if (!element) return;
+      
+      const elementId = element.id || `element_${index}`;
+      const fill = this._parseColor(element.fill);
+      const stroke = this._parseColor(element.stroke);
+      
+      if (fill || stroke) {
+        colorMap[elementId] = { fill, stroke };
+      }
+    };
+    
+    // Helper to process groups of elements
+    const processElements = (elements, type) => {
+      if (!elements) return;
+      
+      // Convert to array if single element
+      const elemArray = Array.isArray(elements) ? elements : [elements];
+      
+      elemArray.forEach((element, index) => {
+        extractColorInfo(element, `${type}_${index}`);
+      });
+    };
+    
+    // Process each type of element
+    processElements(svgElement.path, 'path');
+    processElements(svgElement.rect, 'rect');
+    processElements(svgElement.line, 'line');
+    processElements(svgElement.circle, 'circle');
+    processElements(svgElement.ellipse, 'ellipse');
+    
+    // Process groups if they exist
+    if (svgElement.g) {
+      const groups = Array.isArray(svgElement.g) ? svgElement.g : [svgElement.g];
+      groups.forEach((group, groupIndex) => {
+        processElements(group.path, `group${groupIndex}_path`);
+        processElements(group.rect, `group${groupIndex}_rect`);
+        processElements(group.line, `group${groupIndex}_line`);
+        processElements(group.circle, `group${groupIndex}_circle`);
+        processElements(group.ellipse, `group${groupIndex}_ellipse`);
+      });
+    }
+    
+    return colorMap;
   }
 
   /**

@@ -21,6 +21,7 @@ class GrayscaleMapper {
         minDepth: 0,
         maxDepth: 5,
         invert: false,
+        threshold: 240, // New threshold to ignore very light colors (near white)
         ...(config.grayscaleMapping || {})
       },
       output: {
@@ -36,6 +37,18 @@ class GrayscaleMapper {
    * @returns {number} Depth value
    */
   mapToDepth(grayscaleValue) {
+    // Check if the color is too light and should be ignored
+    const { threshold } = this.config.grayscaleMapping;
+    if (!this.config.grayscaleMapping.invert && grayscaleValue >= threshold) {
+      // Return zero depth (no cut) for very light colors
+      return 0;
+    }
+    
+    if (this.config.grayscaleMapping.invert && grayscaleValue <= (255 - threshold)) {
+      // Return zero depth (no cut) for very dark colors when inverted
+      return 0;
+    }
+    
     // Normalize grayscale value to range 0-1
     const normalizedValue = grayscaleValue / 255;
     

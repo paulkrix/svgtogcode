@@ -212,142 +212,159 @@ class GCodeVisualizer {
 
   /**
    * Generate SVG for the visualization
-   * @param {Array} toolpaths - Toolpaths with coordinates
-   * @param {Object} bounds - Bounds with min/max values
-   * @param {number} minDepth - Minimum depth
-   * @param {number} maxDepth - Maximum depth
-   * @returns {string} SVG for visualization
+   * @param {Array} toolpaths - Toolpaths to visualize
+   * @param {Object} bounds - Bounding box
+   * @param {number} minDepth - Minimum depth for color mapping
+   * @param {number} maxDepth - Maximum depth for color mapping
+   * @returns {string} SVG markup
    */
   _generateSVG(toolpaths, bounds, minDepth, maxDepth) {
-    const { minX, minY, minZ, maxX, maxY, maxZ, width, height, depth } = bounds;
+    const { minX, minY, minZ, maxX, maxY, maxZ } = bounds;
     
-    // SVG container
-    let svg = `<svg 
-      width="100%" 
-      height="100%" 
-      viewBox="${minX} ${minY} ${width} ${height}"
-      style="transform: rotateX(45deg) rotateY(45deg); transform-origin: center; transition: transform 0.5s ease;"
-      xmlns="http://www.w3.org/2000/svg">
-      <style>
-        .toolpath-rapid { stroke: #3498db; stroke-width: 1; fill: none; stroke-dasharray: 5,2; }
-        .toolpath-cut { stroke: #e74c3c; stroke-width: 1.5; fill: none; }
-        .grid-line { stroke: #ecf0f1; stroke-width: 0.5; }
-        .axis-x { stroke: #e74c3c; stroke-width: 1; }
-        .axis-y { stroke: #2ecc71; stroke-width: 1; }
-        .axis-z { stroke: #3498db; stroke-width: 1; }
-      </style>`;
+    // Calculate dimensions and add padding
+    const padding = 20;
+    const width = maxX - minX + padding * 2;
+    const height = maxY - minY + padding * 2;
+    const depth = maxZ - minZ;
     
-    // Add background grid
+    // Adjust so that the visualization is centered
+    const translateX = -(minX + maxX) / 2;
+    const translateY = -(minY + maxY) / 2;
+    
+    // Create SVG with perspective view
+    let svg = `
+      <svg width="100%" height="100%" viewBox="${-width/2} ${-height/2} ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="transform-origin: center; transform: rotateX(45deg) rotateY(45deg);">
+        <style>
+          .toolpath { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+          .rapid { stroke-dasharray: 2 2; }
+          .grid { stroke: #eee; stroke-width: 0.5; }
+          .axis { stroke-width: 1; }
+          .x-axis { stroke: #f44336; }
+          .y-axis { stroke: #4caf50; }
+          .z-axis { stroke: #2196f3; }
+          .label { font-size: 8px; fill: #666; text-anchor: middle; }
+        </style>
+        <g transform="translate(${translateX}, ${translateY})">
+    `;
+    
+    // Add grid for reference
     svg += this._generateGrid(minX, minY, maxX, maxY);
     
     // Add coordinate axes
     svg += this._generateAxes(minX, minY, maxX, maxY);
     
-    // Add each toolpath
+    // Draw all toolpaths
     toolpaths.forEach(path => {
-      if (path.points.length < 2) {
-        return;
+      if (path.points.length < 2) return;
+      
+      // Determine if this is a rapid move or cutting move
+      const isRapid = path.rapid;
+      
+      // Generate color based on depth if cutting, or use gray for rapid
+      let color = '#999';
+      let strokeWidth = 1;
+      
+      // For cutting moves, color by depth
+      if (!isRapid) {
+        // Get the deepest point (most negative Z) of this path
+        const deepestZ = Math.min(...path.points.map(p => p.z));
+        
+        // Normalize depth for coloring
+        const normalizedDepth = Math.min(1, Math.max(0, (deepestZ - minDepth) / (maxDepth - minDepth)));
+        color = this._getDepthColor(normalizedDepth);
+        strokeWidth = 1.5;
       }
       
-      // Create path string
+      // Create path data
       let pathData = `M${path.points[0].x},${path.points[0].y}`;
+      
       for (let i = 1; i < path.points.length; i++) {
         pathData += ` L${path.points[i].x},${path.points[i].y}`;
       }
       
-      // Add path with appropriate class
-      svg += `<path d="${pathData}" class="${path.rapid ? 'toolpath-rapid' : 'toolpath-cut'}" />`;
-      
-      // Add depth indicators for cutting paths
-      if (!path.rapid) {
-        path.points.forEach((point, index) => {
-          // Add a depth indicator every few points
-          if (index % 10 === 0) {
-            const depth = Math.abs(point.z);
-            if (depth > 0.1) { // Only show significant depths
-              // Calculate color based on normalized depth (red for deep, blue for shallow)
-              const normalizedDepth = (depth - minDepth) / (maxDepth - minDepth);
-              const color = this._getDepthColor(normalizedDepth);
-              
-              svg += `<circle cx="${point.x}" cy="${point.y}" r="1.5" fill="${color}" />`;
-            }
-          }
-        });
-      }
+      // Add the path to SVG
+      svg += `<path d="${pathData}" class="toolpath${isRapid ? ' rapid' : ''}" stroke="${color}" stroke-width="${strokeWidth}" />`;
     });
     
     // Add depth legend
     svg += this._generateLegend(minDepth, maxDepth);
     
-    // Close SVG
-    svg += '</svg>';
+    // Close SVG groups and element
+    svg += `
+        </g>
+      </svg>
+    `;
     
     return svg;
   }
   
   /**
-   * Generate a grid for the background
-   * @param {number} minX - Minimum X
-   * @param {number} minY - Minimum Y
-   * @param {number} maxX - Maximum X
-   * @param {number} maxY - Maximum Y
-   * @returns {string} SVG for grid
+   * Generate grid lines for reference
+   * @param {number} minX - Left bound
+   * @param {number} minY - Top bound
+   * @param {number} maxX - Right bound
+   * @param {number} maxY - Bottom bound
+   * @returns {string} SVG markup for grid
    */
   _generateGrid(minX, minY, maxX, maxY) {
-    const gridSize = 10;
-    let grid = '<g class="grid">';
+    // Create grid with 10mm spacing
+    const spacing = 10;
+    let grid = `<g class="grid">`;
     
     // Vertical lines
-    for (let x = Math.floor(minX / gridSize) * gridSize; x <= maxX; x += gridSize) {
-      grid += `<line class="grid-line" x1="${x}" y1="${minY}" x2="${x}" y2="${maxY}" />`;
+    for (let x = Math.floor(minX / spacing) * spacing; x <= Math.ceil(maxX / spacing) * spacing; x += spacing) {
+      grid += `<line x1="${x}" y1="${minY}" x2="${x}" y2="${maxY}" />`;
     }
     
     // Horizontal lines
-    for (let y = Math.floor(minY / gridSize) * gridSize; y <= maxY; y += gridSize) {
-      grid += `<line class="grid-line" x1="${minX}" y1="${y}" x2="${maxX}" y2="${y}" />`;
+    for (let y = Math.floor(minY / spacing) * spacing; y <= Math.ceil(maxY / spacing) * spacing; y += spacing) {
+      grid += `<line x1="${minX}" y1="${y}" x2="${maxX}" y2="${y}" />`;
     }
     
-    grid += '</g>';
+    grid += `</g>`;
     return grid;
   }
   
   /**
    * Generate coordinate axes
-   * @param {number} minX - Minimum X
-   * @param {number} minY - Minimum Y
-   * @param {number} maxX - Maximum X
-   * @param {number} maxY - Maximum Y
-   * @returns {string} SVG for axes
+   * @param {number} minX - Left bound
+   * @param {number} minY - Top bound
+   * @param {number} maxX - Right bound
+   * @param {number} maxY - Bottom bound
+   * @returns {string} SVG markup for axes
    */
   _generateAxes(minX, minY, maxX, maxY) {
+    // Calculate the axes length
+    const size = Math.max(maxX - minX, maxY - minY) * 0.1;
+    
     return `
       <g class="axes">
-        <line class="axis-x" x1="0" y1="0" x2="${maxX * 0.8}" y2="0" />
-        <line class="axis-y" x1="0" y1="0" x2="0" y2="${maxY * 0.8}" />
-        <line class="axis-z" x1="0" y1="0" x2="0" y2="0" transform="rotate(-90)" />
-        <text x="${maxX * 0.8 + 5}" y="0" fill="#e74c3c" font-size="8">X</text>
-        <text x="0" y="${maxY * 0.8 + 10}" fill="#2ecc71" font-size="8">Y</text>
-        <text x="0" y="-10" transform="rotate(-90)" fill="#3498db" font-size="8">Z</text>
+        <line x1="0" y1="0" x2="${size}" y2="0" class="x-axis axis" />
+        <line x1="0" y1="0" x2="0" y2="${size}" class="y-axis axis" />
+        <line x1="0" y1="0" x2="0" y2="-${size/2}" class="z-axis axis" />
+        <text x="${size + 5}" y="0" class="label">X</text>
+        <text x="0" y="${size + 10}" class="label">Y</text>
+        <text x="0" y="-${size/2 + 10}" class="label">Z</text>
       </g>
     `;
   }
   
   /**
-   * Generate a depth legend
+   * Generate a legend showing depth to color mapping
    * @param {number} minDepth - Minimum depth
    * @param {number} maxDepth - Maximum depth
-   * @returns {string} SVG for legend
+   * @returns {string} SVG markup for legend
    */
   _generateLegend(minDepth, maxDepth) {
     const legendWidth = 100;
     const legendHeight = 15;
-    const legendX = 10;
-    const legendY = 10;
+    const legendX = -50;  // Center the legend
+    const legendY = -80;  // Position at the top
     const steps = 5;
     
     let legend = `
       <g transform="translate(${legendX}, ${legendY})">
-        <rect x="0" y="0" width="${legendWidth}" height="${legendHeight}" fill="none" stroke="black" stroke-width="1" />
+        <rect x="0" y="0" width="${legendWidth}" height="${legendHeight}" fill="none" stroke="black" stroke-width="0.5" />
     `;
     
     // Add gradient steps
@@ -361,9 +378,9 @@ class GCodeVisualizer {
     
     // Add text labels
     legend += `
-      <text x="0" y="${legendHeight + 10}" font-size="8">${minDepth}mm</text>
-      <text x="${legendWidth}" y="${legendHeight + 10}" text-anchor="end" font-size="8">${maxDepth}mm</text>
-      <text x="${legendWidth/2}" y="${legendHeight + 10}" text-anchor="middle" font-size="8">Depth</text>
+      <text x="0" y="${legendHeight + 10}" font-size="10">${minDepth}mm</text>
+      <text x="${legendWidth}" y="${legendHeight + 10}" text-anchor="end" font-size="10">${maxDepth}mm</text>
+      <text x="${legendWidth/2}" y="${legendHeight + 10}" text-anchor="middle" font-size="10">Depth</text>
     `;
     
     legend += '</g>';
@@ -373,41 +390,37 @@ class GCodeVisualizer {
   
   /**
    * Get a color for a depth value
-   * @param {number} normalizedDepth - Normalized depth value (0-1)
-   * @returns {string} CSS color
+   * @param {number} normalizedDepth - Normalized depth (0-1)
+   * @returns {string} CSS color string
    */
   _getDepthColor(normalizedDepth) {
-    // Use a color scale - blue to red (shallow to deep)
-    const r = Math.round(255 * normalizedDepth);
-    const b = Math.round(255 * (1 - normalizedDepth));
-    return `rgb(${r}, 50, ${b})`;
+    // Use a blue color scale, darker for deeper cuts
+    const blue = Math.max(0, Math.min(255, Math.round(255 * (1 - normalizedDepth))));
+    return `rgb(0, ${blue}, 255)`;
   }
   
   /**
-   * Calculate total distance of toolpaths
-   * @param {Array} toolpaths - Toolpaths with coordinates
+   * Calculate total distance for all cutting moves
+   * @param {Array} toolpaths - Toolpaths to measure
    * @returns {number} Total distance in mm
    */
   _calculateTotalDistance(toolpaths) {
     let totalDistance = 0;
     
     toolpaths.forEach(path => {
-      const { points } = path;
+      // Skip rapid moves
+      if (path.rapid) return;
       
-      if (points.length < 2) {
-        return;
-      }
-      
-      // Calculate distance between consecutive points
-      for (let i = 1; i < points.length; i++) {
-        const prevPoint = points[i - 1];
-        const currentPoint = points[i];
+      for (let i = 1; i < path.points.length; i++) {
+        const p1 = path.points[i - 1];
+        const p2 = path.points[i];
         
-        const dx = currentPoint.x - prevPoint.x;
-        const dy = currentPoint.y - prevPoint.y;
-        const dz = currentPoint.z - prevPoint.z;
+        // Calculate Euclidean distance
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const dz = p2.z - p1.z;
         
-        totalDistance += Math.sqrt(dx * dx + dy * dy + dz * dz);
+        totalDistance += Math.sqrt(dx*dx + dy*dy + dz*dz);
       }
     });
     
@@ -415,16 +428,20 @@ class GCodeVisualizer {
   }
   
   /**
-   * Format a distance in mm
+   * Format distance as a readable string
    * @param {number} distance - Distance in mm
    * @returns {string} Formatted distance
    */
   _formatDistance(distance) {
-    return `${distance.toFixed(1)}mm`;
+    if (distance < 1000) {
+      return `${distance.toFixed(1)}mm`;
+    } else {
+      return `${(distance / 1000).toFixed(2)}m`;
+    }
   }
   
   /**
-   * Format time in seconds to minutes and seconds
+   * Format time in seconds as a readable string
    * @param {number} seconds - Time in seconds
    * @returns {string} Formatted time
    */
